@@ -4,7 +4,7 @@
 
 LoRaTracker Programs for Arduino
 
-Copyright of the author Stuart Robinson - 19/06/2017
+Copyright of the author Stuart Robinson - 06/08/2017
 
 http://www.LoRaTracker.uk
   
@@ -30,72 +30,65 @@ To Do:
 //     board that has a SD card connected.
 //**************************************************************************************************
 
-#define LoRaTracker_HAB2             
-//#define UseSD                                               //Select to use SD card for logging
+         
 
-#define External_VoltageRead
-//#define CPU_VoltageRead
+//#define External_VoltageRead
+#define CPU_VoltageRead
 
-#define External_TemperatureRead
-//#define CPU_TemperatureRead
+//#define External_TemperatureRead
+#define CPU_TemperatureRead
+
+#define Board_Definition "HAB2_Board_Definitions.h"
+//#define "PIHTracker3_Board_Definitions.h"
+
+const float runmA = 4;                //processor run current
+const float SleepmA = 0.22;              //approx current in sleep, GPS consumes circa 200uA
 
 //**********************************************
 // 1b) GPS Options
 //**********************************************
 
-#define USE_SERIALGPS                          //comment in if using SoftwareSerial
-                        
-#define USE_SOFTSERIAL_GPS
-//#define USE_I2CGPS   
-
-#define UBLOX
 #define GPSBaud 9600
 
 #define WhenNoGPSFix LeaveOn                   //What to do with GPS power when there is no fix at ends of wait period (LeaveOn or LeaveOff)
-#define WaitGPSFixSeconds 5                    //in flight mode time to wait for a new GPS fix 
+#define WaitGPSFixSeconds 10                   //in flight mode time to wait for a new GPS fix 
 #define GPSPowerControl Enabled                //Some tracker boards can remove the power form the GPS
+#define Use_GPS_SoftwareBackup                 //some GPSs do not support this mode
 
-#define DebugNoGPS                             //test mode, does not use GPS
-#define TestLocation                           //uses test locations as defined in Flight_Settings
+//#define DEBUGNoGPS                           //test mode, does not use GPS
 
 #define GPSShutdownTimemS 1900                 //Software backup mode takes around 1.9secs to power down, used in maHr calculation
 
 #define fixisoldmS 10000                       //if location has not updated in this number of mS, assume GPS has lost fix
 #define GPSFixs 100                            //number of GPS fixes between setting system clock from GPS   
 
-//**************************************************************************************************
-// 1c) Bluetooth Options
-//**************************************************************************************************
+#define GPS_attempts 3                         //number of times the sending of GPS config will be attempted.
+#define GPS_WaitAck_mS 2000                    //number of mS to wait for an ACK response from GPS
+const byte GPS_Reply_Size = 12;                //size of GPS reply buffer
 
-//#define Bluetooth_Baud 9600 
-//#define USE_NMEA_Bluetooth
+
+#define USE_SOFTSERIAL_GPS                    //need to include this if we are using softserial for GPS     
+#define GPS_Library "UBLOX_SerialGPS.h"       //define the GPS library routines to use here
+//#define GPS_Library "UBLOX_I2CGPS.h"
+const float GPSmA = 24;                        //GPS average (UBLOX) current when aquiring fix
 
 //**************************************************************************************************
 // 1d) Which memory to use for storage
 //**************************************************************************************************
 
-//#define USE_I2C_FRAM_MEMORY1                  //select if using i2c FRAM
-//#define USE_SPI_FRAM_MEMORY1                //select if using SPI FRAM
-#define USE_EEPROM_MEMORY
-//#define USE_NoMemory                        //define if payloads not to be saved in memory
+
+#define Memory_Library "EEPROM_Memory.h"
+
 
 //**************************************************************************************************
-// 1e) Module locations for MikroBus Shield Boards
+// 1f) FSK RTTY Settings
 //**************************************************************************************************
 
-//#define LoRa_Device_in_MB1                  //defines which Mikrobus socket the LoRa device is in
-//#define GPS_in_MB2                          //defines which Mikrobus socket the GPS is in
- 
-
- //**************************************************************************************************
-// 1f) AFSK RTTY Upload Options
-//**************************************************************************************************
-
-//#define USE_AFSK_RTTY_Upload
-//const int AFSKrttybaud = 1465;             //delay in uS x 2 for 1 bit and 300baud. Decode range in FLDIGI 1420 to 1510  
-//const int afskleadinmS = 500;              //number of ms for AFSK constant lead in tone
-//const int tonehighHz = 1000;               //high tone in Hertz 
-//const int tonelowHz = 650;                 //low tone in Hertz   
+const unsigned int FSKRTTYbaudDelay = 9850;         //delay for baud rate for FSK RTTY, 19930 for 50baud, 9900 for 100baud, 4930 for 200baud  
+const byte FSKRTTYRegshift = 6;                     //number of frequency steps to use for shift
+const byte FSKRTTYpips = 5;                         //number of FSK lead in pips
+const int  FSKRTTYleadin = 500;                     //number of ms for FSK constant lead in tone
+const byte sync_chars = 3;                          //number of extra $ sync characters to send 
 
  
  
@@ -105,9 +98,9 @@ To Do:
 //**************************************************************************************************
 
 const int CalibrationOffset = 0;              //this is the LoRa module frequency calibration offset in Hertz
-const float kelvin_offset = 334;              //if processor self read of temperature reports high, increase this number
+const float kelvin_offset = 320;              //if processor self read of temperature reports high, increase this number
 const float temp_conversion_slope = 1.27;     //defines the rate of change between low and high temperatures
-const long  adc_constant = 1135194;           //if processor self read of its supply voltage reports high reduce this number 
+const unsigned long  adc_constant = 1146679;      //if processor self read of its supply voltage reports high reduce this number 
 
 
 //**************************************************************************************************
@@ -116,20 +109,20 @@ const long  adc_constant = 1135194;           //if processor self read of its su
 
 
 //#define ClearSavedData                     //zero the saved data, resets, sequence, Mahr
+//#define ClearAllMemory                       //Clears from start memory to end memory, normally 1kbyte, needs to be folloowed by ConfigureDefaults
 #define ConfigureDefaults                    //Configure settings from default program constants, save in memory and copy to RAM, do this once only
 //#define ConfigureFromMemory                //Read settings from attached memory
 
 #define Output_len_max 125                   //maximum length for built payload
-#define CalibrateTone                        //comment in to have a calibrate tone at startup
+#define CheckTone                            //comment in to have a calibrate tone at startup, also doubles as GPS check tone
 
 #define SendBind                             //at startup tracker transmitter will send a bind packet
 #define write_CalibrationOffset              //comment in to write calibration constant to memory, needs to be done once only.
 
-#define DEBUG
+//#define DEBUG
+//#define LORADEBUG                           //displays extra debug messages when using LoRa 
 
 //#define ReceiveBind                        //during flight allows for a bind to be received    
-
-
 
 //**************************************************************************************************
 // 4)  Not used - Left for future applications
@@ -141,10 +134,16 @@ const long  adc_constant = 1135194;           //if processor self read of its su
 // 5) HAB flight settings
 //**************************************************************************************************
 
-char Flight_ID[15] = "LoRaTracker1";
-const float west_fence = -32;
+char Flight_ID[15] = "LoRaHAB2";
+const float west_fence = -4;
 const float east_fence = 45;
-#define Sleepsecs 5                             //sleep time in seconds after each TX loop
+
+/*
+To test, set West fence to 
+ */
+
+
+#define Loop_Sleepsecs 20                            //sleep time in seconds after each TX loop
 #define outside_fence_Sleep_seconds 600         //approx 10 minutes
 
 #define RemoteControlNode 'G'                   //normally used by tracker transmitter in promiscuous_Mode
@@ -163,8 +162,8 @@ const boolean  promiscuous_Mode = true;         //if set to True remote control 
 
 const char option_SearchEnable = OptionOn;
 const char option_TXEnable = OptionOn;
-const char option_FSKRTTYEnable = OptionOff;        
-const char option_CheckFence = OptionOff;           
+const char option_FSKRTTYEnable = OptionOn;        
+const char option_CheckFence = OptionOn;                                         
 const char option_ShortPayloadEnable = OptionOff;
 const char option_RepeatEnable = OptionOff;         
 const char option_AddressStrip = OptionOff;         
@@ -187,7 +186,7 @@ const unsigned int Default_config4 = 0;
 
 
 //**************************************************************************************************
-// 7) LoRa Frequency and Modem settings
+// 7) Frequency and LoRa Modem settings
 //**************************************************************************************************
 
 
@@ -219,14 +218,20 @@ const unsigned int Default_config4 = 0;
 #define BindMode_CodeRate CR45
 #define BindMode_Power 2
 
-const byte Deviation = 0x52;    //typical deviation for tones
+const byte Deviation = 0x52;                         //typical deviation for tones
+const byte lora_RXBUFF_Size = 128;
+const byte lora_TXBUFF_Size = 128;
+
+const float RXmA = 11;                //LoRa device receive current
+const float TXmA = 40;                //LoRa device transmit current @ 10dBm
+
 
 //**************************************************************************************************
 // 8) Various Program Settings
 //**************************************************************************************************
 
 
-const byte Cmd_WaitSecs = 5;                       //number of seconds to stay in command mode  
+const byte Cmd_WaitSecs = 5;                        //number of seconds to stay in command mode  
 const byte default_attempts = 5;                    //default number of times a command will attempt to be sent
 const int DozeSleepSecs = 60;                       //how many seconds to spend in doze (very low power mode), can only be set remotely 
 
@@ -236,17 +241,13 @@ const int DozeSleepSecs = 60;                       //how many seconds to spend 
 #define max_functions 5                             //number of functions in main program loop
 
 const int inter_Packet_delay = 500;                 //allows time for receiver to be ready to see a possible reply
-const byte delayforRelaysecs = 6;                   //allows time for relay to re-transmit
+const byte delayforRelaysecs = 2;                   //allows time for relay to re-transmit
+const byte delayforAFSKuploadSecs = 4;              //allows time for AFSK upload on receiver
 
 //**************************************************************************************************
-// 9) FSK RTTY Settings
+// 9) Not used - Left for future applications
 //**************************************************************************************************
 
-const unsigned int FSKRTTYbaudDelay = 9900;         //delay for baud rate for FSK RTTY, 19930 for 50baud, 9900 for 100baud, 4930 for 200baud (100baud was 9800)  
-const byte FSKRTTYRegshift = 6;                     //number of frequency steps to use for shift
-const byte FSKRTTYpips = 5;                         //number of FSK lead in pips
-const int  FSKRTTYleadin = 500;                     //number of ms for FSK constant lead in tone
- 
 
 
 //**************************************************************************************************
@@ -293,10 +294,10 @@ byte tsize = 1;               //used to keep track of current text size 1 or 2
 
 
 //**************************************************************************************************
-// 13) NMEA Output Settings 
+// 13) Not used - Left for future applications 
 //**************************************************************************************************
 
-#define Payload_buffer 128                            //size of buffer for NMEA output, matches that of lora_TXBUFF[128]
+
 
 
 //**************************************************************************************************
