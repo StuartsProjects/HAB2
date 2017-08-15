@@ -34,7 +34,7 @@
 #define Board_Definition "HAB2_Board_Definitions.h"
 //#define "PIHTracker3_Board_Definitions.h"
 
-const float runmA = 4;                        //processor run current
+const float runmA = 4.6;                        //processor run current
 const float SleepmA = 0.22;                   //approx current in sleep, GPS consumes circa 200uA
 
 
@@ -56,8 +56,8 @@ const byte Output_len_max = 125;             //maximum length for built payload
 
 //#define ReceiveBind                        //during flight allows for a bind to be received
 
-//#define DEBUG
-//#define LORADEBUG                          //displays extra debug messages when using LoRa
+#define DEBUG
+#define LORADEBUG                          //displays extra debug messages when using LoRa
 
 const byte Cmd_WaitSecs = 5;                 //number of seconds to stay in command mode
 const byte default_attempts = 5;             //default number of times a command will attempt to be sent
@@ -118,8 +118,8 @@ const byte Deviation = 0x52;                 //typical deviation for tones
 const byte lora_RXBUFF_Size = 128;
 const byte lora_TXBUFF_Size = 128;
 
-const float RXmA = 11;                       //LoRa device receive current
-const float TXmA = 40;                       //LoRa device transmit current @ 10dBm
+const float RXmA = 11.3;                       //LoRa device receive current
+const float TXmA = 41;                       //LoRa device transmit current @ 10dBm
 
 const int inter_Packet_delay = 500;          //allows time for receiver to be ready to see a possible reply
 const byte delayforRelaysecs = 2;            //allows time for relay to re-transmit
@@ -150,7 +150,7 @@ const unsigned long GPS_WaitAck_mS = 2000;       //number of mS to wait for an A
 const unsigned int GPSFixs = 100;                //number of GPS fixes between setting system clock from GPS
 const byte GPS_attempts = 3;                     //number of times the sending of GPS config will be attempted.
 const byte GPS_Reply_Size = 12;                  //size of GPS reply buffer
-const float GPSmA = 24;                          //GPS average (UBLOX) current when aquiring fix
+const float GPSmA = 23.5;                          //GPS average (UBLOX) current when aquiring fix
 
 
 //#define GPS_Library "UBLOX_I2CGPS.h"

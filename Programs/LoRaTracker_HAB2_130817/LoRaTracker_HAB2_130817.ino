@@ -127,10 +127,13 @@ NeoSWSerial GPSserial(GPSRX, GPSTX);                 //this library is more rela
 #include "Binary2.h"
 
 
-
 void loop()
 {
   UPStart = millis();                                 //set the start time for UPtime
+  Serial.println();
+  Serial.println();
+  Serial.println();
+  printTimes();
   lora_TXTime = 0;
   lora_RXTime = 0;
   UPTime = 0;
@@ -182,6 +185,7 @@ void loop()
   updatemAUsed();
   printTimes();
   digitalWrite(lora_NSS, HIGH);                             //take NSS line high, makes sure LoRa device is off
+  Serial.flush();                                           //let prints finish
   sleepSecs(ramc_Sleepsecs);                                //this sleep is used to set overall transmission cycle time
 
 }
@@ -234,13 +238,11 @@ void do_Transmissions()
 
   incMemoryULong(addr_SequenceNum);                                  //increment sequence number
   Count = buildHABPacket(lora_TXBUFF);
-  buildHABPacket(lora_TXBUFF);
   stripvalue = readConfigByte(AddressStrip);
   printPayload(Count);
   digitalWrite(LED1, HIGH);
   lora_Send(0, Count, HABPacket, Broadcast, ramc_ThisNode, 10, lora_Power, stripvalue);   //send the packet, data is in TXbuff from lora_TXStart to lora_TXEnd
   digitalWrite(LED1, LOW);
-  Serial.println();
 
   sleepSecs(delayforAFSKuploadSecs);                                 //allow time for receiver AFSK upload
 
@@ -249,7 +251,7 @@ void do_Transmissions()
   if (readConfigByte(FSKRTTYEnable))
   {
 
-#ifdef debug
+#ifdef DEBUG
     Serial.println(F("FSKRTTY"));
 #endif
 
@@ -267,7 +269,6 @@ void do_Transmissions()
     Send_FSKRTTY(13);                                          //finish RTTY with carriage return
     Send_FSKRTTY(10);                                          //and line feed
     digitalWrite(LED1, LOW);                                   //make sure LED off
-    Serial.println();
     lora_TXOFF();                                              //to ensure TXTime updated correctly
   }
 
@@ -295,19 +296,19 @@ byte buildHABPacket(byte *lora_TXBUFF)                         //note that expec
   sequence = Memory_ReadULong(addr_SequenceNum);               //sequence number is kept in non-volatile memory so it survives resets
   resets =  Memory_ReadUInt(addr_ResetCount);                  //reset count is kept in non-volatile memory so it survives resets
 
-  //Serial.flush();
+  #ifdef DEBUG
   Serial.print("Resets ");
   Serial.println(resets);
   Serial.print("Internal Temperature ");
   Serial.println(internal_temperature);
+  Serial.print("GPS fixtime ");
+  Serial.print(GPSFixTime);
+  Serial.println("mS");
+  #endif
 
   runmAhr = (current_mASecs / 3600);
 
   volts = read_SupplyVoltage();
-
-  Serial.print("GPS fixtime ");
-  Serial.print(GPSFixTime);
-  Serial.println("mS");
   sats = gps.satellites.value();
   dtostrf(TRLat, 7, 5, LatArray);                              //format is dtostrf(FLOAT,WIDTH,PRECISION,BUFFER);
   dtostrf(TRLon, 7, 5, LonArray);                              //converts float to character array
@@ -375,7 +376,7 @@ char Hex(char lchar)
 
 void send_LocationBinary(float Lat, float Lon, unsigned int Alt)
 {
-#ifdef debug
+#ifdef DEBUG
   Serial.println(F("TX Binary Location"));
   Serial.flush();
 #endif
@@ -1624,19 +1625,17 @@ void setup()
   GPSonTime = millis();
   while (!gpsWaitFix(5, DontSwitch, LeaveOn))             //while there is no fix
   {
-
     led_Flash(2, 50);                                     //two short LED flashes to indicate GPS waiting for fix
-
-#ifdef DEBUG
-    i = (millis() - GPSonTime) / 1000;
-    Serial.print(F("GPS On Time "));
-    Serial.print(i);
-    Serial.println(F(" Secs"));
-#endif
   }
-  addmASecs(GPSmA, (GPSFixTime + GPSShutdownTimemS), 3);   //add GPS consumed current to total
+   
 #endif
 
+  Serial.print(F("First Fix at "));  
+  Serial.print(GPSFixTime);
+  Serial.print(F("mS"));
+
+  addmASecs(GPSmA, (GPSFixTime + GPSShutdownTimemS), 3);    //add GPS consumed current to total 
+  
   lora_Tone(500, 500, 2);                                  //Transmit an FM tone, 500hz, 500ms, 2dBm
   digitalWrite(LED1, LOW);
   sleepSecs(2);                                            //wait for GPS to shut down
