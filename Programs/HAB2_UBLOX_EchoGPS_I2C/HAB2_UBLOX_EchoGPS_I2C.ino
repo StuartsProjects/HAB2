@@ -1,6 +1,6 @@
 #define programname "HAB2_UBLOX_EchoGPS_I2C"
 #define programversion "V1.0"
-#define dateproduced "160817"
+#define dateproduced "011017"
 #define aurthorname "Stuart Robinson"
 
 
@@ -8,7 +8,7 @@
 *******************************************************************************************************************************
   Easy Build LoRaTracker Programs for Arduino
 
-  Copyright of the author Stuart Robinson - 16/08/17
+  Copyright of the author Stuart Robinson - 1/10/17
 
   http://www.LoRaTracker.uk
 
@@ -49,7 +49,7 @@ const byte GPS_attempts = 3;                //number of times the sending of GPS
 const byte GPS_Reply_Size = 12;             //size of GPS reply buffer
 boolean GPS_Config_Error;
 
-
+#define GPS_ALLOW_GPGSV                     //we want to see the GPGSV messages
 #include "UBLOX_I2CGPS.h"
 
 void loop()

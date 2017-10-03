@@ -1,6 +1,6 @@
 #define programname "HAB2_UBLOX_EchoGPS_Serial"
 #define programversion "V1.0"
-#define dateproduced "160817"
+#define dateproduced "011017"
 #define aurthorname "Stuart Robinson"
 
 
@@ -8,7 +8,7 @@
 *******************************************************************************************************************************
 Easy Build LoRaTracker Programs for Arduino
 
-Copyright of the author Stuart Robinson - 16/08/17
+Copyright of the author Stuart Robinson - 1/10/17
 
 http://www.LoRaTracker.uk
 
@@ -52,6 +52,7 @@ boolean GPS_Config_Error;
 #include <NeoSWSerial.h>                    //https://github.com/SlashDevin/NeoSWSerial  
 NeoSWSerial GPSserial(GPSRX, GPSTX);        //this library is more relaible at GPS init than software serial
 
+#define GPS_ALLOW_GPGSV                     //we want to see the GPGSV messages 
 #include "UBLOX_SerialGPS.h"
 
 
