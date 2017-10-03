@@ -4,14 +4,14 @@ The programs requre the installation of the current LoRaTracker Library files se
 
 https://github.com/LoRaTracker/LoRaTracker-Library
 
-The programs are;
+The programs in here are;
 
-LoRaTracker_HAB2_160817 - The HAB tracker transmitter, supports two way LoRa control and tracking
+LoRaTracker_HAB2_xxxxxx - The HAB tracker transmitter, supports two way LoRa control and tracking
 
-FSKRTTY_HAB2_150817 - A FSK RTTY only version of the HAB tracker
+FSKRTTY_HAB2_FSKRTTYONLY_xxxxxx - A FSK RTTY only version of the HAB tracker
 
-HAB2_UBLOX_EchoGPS_I2C - A test program for the I2C UBLOX GPS, checks that Navigation model 6 can be set
+HAB2_UBLOX_EchoGPS_I2C - A test program for the UBLOX GPS in I2C mode, checks that Navigation model 6 can be set
 
-HAB2_UBLOX_EchoGPS_Serial - A test program for the I2C UBLOX GPS, checks that Navigation model 6 can be set
+HAB2_UBLOX_EchoGPS_Serial - A test program for the UBLOX GPS in serial mode, checks that Navigation model 6 can be set
 
-I2C_Scanner - a basic I2C scanner, just reports any I2C devices found
+I2C_Scanner - a basic I2C scanner, reports any I2C devices found

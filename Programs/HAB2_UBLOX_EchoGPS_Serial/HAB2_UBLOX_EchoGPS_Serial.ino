@@ -37,13 +37,17 @@ To Do:
 #include <Arduino.h>
 #include <avr/pgmspace.h>
 
-#include "HAB2_Board_Definitions.h"         //select board type here  
+//#include "HAB2_Board_Definitions.h"         //select board type here  
+//#include "PIHTracker3_Board_Definitions.h"         //select board type here
+#include "Locator2_Board_Definitions.h"         //select board type here
+
 #include "Program_Definitions.h"            //definitions for programs
 
 const unsigned long GPS_WaitAck_mS = 2000;  //number of mS to wait for an ACK response from GPS
 const byte GPS_attempts = 3;                //number of times the sending of GPS config will be attempted.
 const byte GPS_Reply_Size = 12;             //size of GPS reply buffer
 const unsigned int GPSBaud = 9600;          //baud rate of GPS
+boolean GPS_Config_Error;  
 
 #include <NeoSWSerial.h>                    //https://github.com/SlashDevin/NeoSWSerial  
 NeoSWSerial GPSserial(GPSRX, GPSTX);        //this library is more relaible at GPS init than software serial
@@ -87,7 +91,7 @@ void setup()
   led_Flash(2, 500);
 
   pinMode(GPSPOWER, OUTPUT);                 //in case power switching components are fitted
-  GPS_On(UseGPSPowerControl);                //this will power the GPSon
+  GPS_On(DoGPSPowerSwitch);                 //this will power the GPSon
   GPS_Setup();
 
   if (!GPS_CheckNavigation())                //Check that UBLOX GPS is in Navigation model 6

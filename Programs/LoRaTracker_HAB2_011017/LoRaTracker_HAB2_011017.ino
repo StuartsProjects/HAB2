@@ -7,13 +7,14 @@
 //
 //**************************************************************************************************
 
-#define programname "LoRaTracker_HAB2_160817"
+#define programname "LoRaTracker_HAB2_010817"
 #define aurthorname "Stuart Robinson"
 
 #include <Arduino.h>
 #include <avr/pgmspace.h>
 
-#include "HAB2_Settings.h"
+#include "LoRaTracker_HAB2_Settings.h"
+#include Board_Definition
 #include "Program_Definitions.h"
 
 /*
@@ -21,7 +22,7 @@
 
   LoRaTracker Programs for Arduino
 
-  Copyright of the author Stuart Robinson - 16/08/17
+  Copyright of the author Stuart Robinson
 
   http://www.LoRaTracker.uk
 
@@ -36,11 +37,14 @@
   Location payload is constructed thus;
 
   PayloadID,Sequence,Time,Lat,Lon,Alt,Sats,SupplyVolts,Temperature,Resets,Config0byte,StatusByte,RunmAhr,hertzoffset,GPSFixTime,Checksum
-      0        1       2   3   4   5    6      7            8        9        10          11        12      13           14        15
+  0           1      2   3   4   5    6      7            8         9        10         11        12       13         14        15
 
   To Do:
   GPSoff time may be incorrect at initial lock
- 
+  check GPSserial.end() used to prevent timing issues
+  check USING_SERIALGPS, USING_I2CGPS, applied in all gps libraries
+  hide commnads like #define Use_Test_Location
+  Check WhenNoGPSFix LeaveOn
   Changes:
 
 **************************************************************************************************
@@ -73,16 +77,14 @@ byte ramc_CommandMode_Power;
 
 byte ramc_Current_TXconfig1;                        //sets the config of whats transmitted etc
 byte ramc_Cmd_WaitSecs;
+byte stripvalue;
+byte sats;                                          //either sats in view from GPGSV or sats from NMEA fix sentence
+int internal_temperature;
+
 
 unsigned int ramc_Sleepsecs;                        //seconds for sleep at end of TX routine
 unsigned int ramc_WaitGPSFixSeconds;                //in flight mode, default time to wait for a fix
 unsigned int ramc_FSKRTTYbaudDelay;                 //dealy used in FSKRTTY routine to give chosen baud rate
-
-byte stripvalue;
-byte sats;                                          //either sats in view from GPGSV or sats from NMEA fix sentence
-
-int internal_temperature;
-
 
 unsigned long UPTime = 0;
 unsigned long UPStart = 0;
@@ -90,6 +92,7 @@ unsigned long current_mASecs = 0;                   //running total of mAseconds
 unsigned long current_Sleepsecs = 0;
 
 float Fence_Check_Lon;                              //used for fence check
+
 float TRLat;                                        //tracker transmitter co-ordinates
 float TRLon;
 unsigned int TRAlt;
@@ -103,6 +106,10 @@ byte ramc_key1;
 byte ramc_key2;
 byte ramc_key3;
 byte keypress;
+
+unsigned long GPSonTime;
+unsigned long GPSFixTime;
+boolean GPS_Config_Error;
 
 
 #include Board_Definition                            //include previously defined board file
@@ -128,6 +135,7 @@ NeoSWSerial GPSserial(GPSRX, GPSTX);                 //this library is more rela
 #include "Binary2.h"
 
 
+
 void loop()
 {
   UPStart = millis();                                 //set the start time for UPtime
@@ -140,30 +148,28 @@ void loop()
   printTimes();
   internal_temperature = (int) read_Temperature();    //read temp just after sleep, when CPU is closest to ambient
 
-  wait_Command();                                     //wait for incoming command
-
-  if (readConfigByte(DozeEnable))
-  {
-    Serial.print(F("Doze "));
-    updatemAUsed();
-    printTimes();
-    sleepSecs(DozeSleepSecs);                         //tracker has doze made enabled, so just doze awhile and do not send transmissions
-    return;
-  }
+  wait_Command();                                     //Put this here as a check of what happens to GPS if its left on and there is a TX.
 
 
-#ifndef DEBUGNoGPS                                    //if the tracker is in Doze mode we dont want to turn on the GPS 
   GPSonTime = millis();
   gpsWaitFix(ramc_WaitGPSFixSeconds, SwitchOn, LeaveOn);
-#endif
 
-
-#ifdef DEBUGNoGPS
+#ifdef Use_Test_Location
   TRLat = TestLatitude;
   TRLon = TestLongitude;
   TRAlt = TestAltitude;
 #endif
 
+  wait_Command();                                     //wait for incoming command
+
+  if (readConfigByte(DozeEnable))
+  {
+    Serial.println(F("Doze"));
+    updatemAUsed();
+    printTimes();
+    sleepSecs(DozeSleepSecs);                         //tracker has doze made enabled, so just doze awhile and do not send transmissions
+    return;
+  }
 
   if (readConfigByte(CheckFence) && (!doFenceCheck()))      //if fence check is enabled and tracker is outside fence
   {
@@ -255,10 +261,10 @@ void do_Transmissions()
 
     Serial.println(F("Send FSKRTTY"));
 
-    lora_DirectSetup();                                              //set for direct mode
-    lora_SetFreq(TrackerMode_Frequency, CalibrationOffset);          //set to tracker frequency
+    lora_DirectSetup();                                                //set for direct mode
+    lora_SetFreq(ramc_TrackerMode_Frequency, ramc_CalibrationOffset);
     Start_FSKRTTY(FSKRTTYRegshift, FSKRTTYleadin, FSKRTTYpips);
-    
+
     for (index = 1; index <= sync_chars; index++)
     {
       Send_FSKRTTY('$', FSKRTTYbaudDelay);
@@ -268,15 +274,15 @@ void do_Transmissions()
     {
       Send_FSKRTTY(lora_TXBUFF[index], FSKRTTYbaudDelay);
     }
-    Send_FSKRTTY(13, FSKRTTYbaudDelay);                               //finish RTTY with carriage return
-    Send_FSKRTTY(10, FSKRTTYbaudDelay);                               //and line feed
-    digitalWrite(LED1, LOW);                                          //make sure LED off
-    lora_TXOFF();                                                     //to ensure TXTime updated correctly
+    Send_FSKRTTY(13, FSKRTTYbaudDelay);                        //finish RTTY with carriage return
+    Send_FSKRTTY(10, FSKRTTYbaudDelay);                        //and line feed
+    digitalWrite(LED1, LOW);                                   //make sure LED off
+    lora_TXOFF();                                              //to ensure TXTime updated correctly
   }
 
   if (readConfigByte(SearchEnable))
   {
-    Setup_LoRaSearchMode();                                           //setup is here so that any mode can be used to TX binary packet
+    Setup_LoRaSearchMode();                                    //setup is here so that any mode can be used to TX binary packet
     send_LocationBinary(TRLat, TRLon, TRAlt);
   }
 
@@ -290,7 +296,6 @@ byte buildHABPacket(byte *lora_TXBUFF)                         //note that expec
   int volts;
   byte Count;
   char LatArray[12], LonArray[12];
-  //byte node[3];
 
   unsigned long fixtime;
   unsigned long sequence;
@@ -300,16 +305,19 @@ byte buildHABPacket(byte *lora_TXBUFF)                         //note that expec
 
   Serial.print("Resets ");
   Serial.println(resets);
-  Serial.print("Internal Temperature ");
+  Serial.print("Temperature ");
   Serial.println(internal_temperature);
 
   runmAhr = (current_mASecs / 3600);
 
   volts = read_SupplyVoltage();
 
-  Serial.print("GPS fixtime ");
-  Serial.print(GPSFixTime);
-  Serial.println(F("mS"));
+  if (!readConfigByte(GPSHotFix))
+  {
+    GPSFixTime = 0;                                              //if GPS power save is off (no GPSHotFix), ensure GPS fix time is set to zero
+    Serial.println("GPSFixTime set to 0");
+  }
+
   sats = gps.satellites.value();
   dtostrf(TRLat, 7, 5, LatArray);                              //format is dtostrf(FLOAT,WIDTH,PRECISION,BUFFER);
   dtostrf(TRLon, 7, 5, LonArray);                              //converts float to character array
@@ -318,7 +326,6 @@ byte buildHABPacket(byte *lora_TXBUFF)                         //note that expec
   Count = snprintf(lora_TXBUFF,
                    Output_len_max,
                    "$$$$%s,%lu,%02d:%02d:%02d,%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%lu",
-                   //"$$%s,%lu,%02d:%02d:%02d,%s,%s,%d,%d,%d,%d",
                    Flight_ID,
                    sequence,
                    gps.time.hour(),
@@ -381,7 +388,7 @@ void send_LocationBinary(float Lat, float Lon, unsigned int Alt)
 
   digitalWrite(LED1, HIGH);
   Serial.println(F("Send Binary Location"));
-  lora_Send(0, 10, LocationBinaryPacket, Broadcast, ramc_ThisNode, 10, lora_Power, stripvalue);   //send the packet, data is in TXbuff from lora_TXStart to lora_TXEnd
+  lora_Send(0, 10, LocationBinaryPacket, Broadcast, ramc_ThisNode, 10, lora_Power, 0);   //send the packet, data is in TXbuff from lora_TXStart to lora_TXEnd
   digitalWrite(LED1, LOW);
 }
 
@@ -406,7 +413,6 @@ void action_outside_fence()
 byte doFenceCheck()                                         //checks to see if GPS location is within an Western and Eastern limit
 {
   //there has been a fix, so check fence limits
-  //Serial.print(F("Fence Check "));
   Fence_Check_Lon = gps.location.lng();
 
 #ifdef DEBUGNoGPS
@@ -449,9 +455,9 @@ void updatemAUsed()
   addmASecs(TXmA, lora_TXTime, 1);                            //add TXTime current consumed current to total
   addmASecs(RXmA, lora_RXTime, 2);                            //add RXTime current consumed current to total
 
-  if (readConfigByte(GPSPowerSave))
+  if (readConfigByte(GPSHotFix))
   {
-    addmASecs(GPSmA, (GPSFixTime + GPSShutdownTimemS), 3);    //add GPS consumed current to total only if power save enabled
+    addmASecs(GPSmA, (GPSFixTime + GPSShutdownTimemS), 3);    //add GPS consumed current to total only if power save (GPSHotFix) enabled
   }
 
   UPTime = (millis() - UPStart);
@@ -468,7 +474,6 @@ void addmASecs(float lmAamp, unsigned long lmillis, byte number)
   //adds to the running total of current_mASecs, i.e 10mA for 2000mS = 20mAmS
   //for a long unsigned int max Count = 4294967296 or 4294967 mAMins or 71582 maHr
   unsigned long i;
-  //i = (lmillis / 1000);                                     //convert the mS time into Seconds
   i = (unsigned long) ((lmillis * lmAamp) / 1000) ;           //calculate the mASecs, divide the time by 1000
   current_mASecs = current_mASecs + i;
   Serial.print(number);
@@ -531,7 +536,7 @@ byte checkForPacket()
     {
       //packet has arrived
       lora_ReadPacket();
-      //Serial.print(F("RX "));
+
 #ifdef DEBUG
       Serial.write(lora_RXPacketType);
       Serial.write(lora_RXDestination);
@@ -630,7 +635,7 @@ void processPacket()
 
   if (lora_RXPacketType == ResetTracker)              //is it a reset ?
   {
-    Serial.println(F("Reset?"));
+    Serial.println(F("Reset ?"));
     lora_RXBuffPrint(0);                              //print packet contents as ASCII
     Serial.println();
 
@@ -648,7 +653,6 @@ void processPacket()
     {
       Serial.println(F("Invalid"));
       delay(inter_Packet_delay);
-      //delay(500);
       Setup_LoRaCommandMode();
       send_Command(NACK);
     }
@@ -840,7 +844,7 @@ void Send_FSKRTTYTest()
     else
     {
       Send_FSKRTTY('0', FSKRTTYbaudDelay);
-      Send_FSKRTTY((power + 48), FSKRTTYbaudDelay);
+      Send_FSKRTTY(power + 48, FSKRTTYbaudDelay);
     }
     delay(200);
   }
@@ -857,7 +861,9 @@ void sleepSecs(unsigned int LNumberSleeps)
   Serial.print(F("zz "));
   Serial.println(LNumberSleeps);
   Serial.flush();                                      //let print complete
-  GPSserial.end();                                     //we dont want GPS interfering with sleep
+#ifdef USING_SERIALGPS
+  GPSserial.end();                                     //we dont want GPS input interfering with sleep, make sure its off
+#endif
   digitalWrite(lora_NSS, HIGH);                        //ensure LoRa Device is off
 
   for (i = 1; i <= LNumberSleeps; i++)
@@ -960,15 +966,28 @@ boolean gpsWaitFix(unsigned long waitSecs, byte StartState, byte LeaveState)
   unsigned long endwaitmS, millistowait, currentmillis;
   pulseWDI();
   byte GPSByte;
+  long temp;
 
   if (StartState == 1)
   {
-    GPS_On(UseGPSPowerControl);
+    GPS_On(DoGPSPowerSwitch);
+    GPSonTime = millis();
   }
   else
   {
-    GPS_On(DoNotUseGPSPowerControl);
+    GPS_On(NoGPSPowerSwitch);
   }
+
+#ifdef Check_GPS_Navigation_Model_OK
+  Serial.println(F("Checking Navigation Model"));
+  if (!GPS_CheckNavigation())
+  {
+    //something wrong with GPS, navigation mode not set so reconfigure the GPS
+    Serial.println(F("GPS Configuration Error !!!!"));
+    GPS_Setup();
+  }
+#endif
+
 
   Serial.print(F("Wait Fix "));
   Serial.print(waitSecs);
@@ -998,53 +1017,66 @@ boolean gpsWaitFix(unsigned long waitSecs, byte StartState, byte LeaveState)
       TRLon = gps.location.lng();
       TRAlt = (unsigned int) gps.altitude.meters();
 
-      if (readConfigByte(GPSPowerSave))
+      //Altitude is used as an unsigned integer, so that the binary payload is as short as possible.
+      //However gps.altitude.meters(); can return a negative value which converts to
+      //65535 - Altitude, which we dont want. So we will assume any value over 60,000M is zero
+
+      if (TRAlt > 60000)
       {
-        GPS_Off(UseGPSPowerControl);
+        TRAlt = 0;
+      }
+
+      if (readConfigByte(GPSHotFix))
+      {
+        GPS_Off(DoGPSPowerSwitch);
+        GPSFixTime = (millis() - GPSonTime);
+        //GPSoffTime = millis();
+        Serial.print(F("GPS Fix Time "));
+        Serial.print(GPSFixTime);
+        Serial.println(F("mS"));
       }
       else
       {
-        GPS_Off(DoNotUseGPSPowerControl);
+        GPS_Off(NoGPSPowerSwitch);
       }
 
       setStatusByte(GPSFix, 1);
       pulseWDI();
       return true;
     }
+
+#ifdef UBLOX
+    if (GNGGAFIXQ.age() < 2000)                     //check to see if GLONASS has gone active
+    {
+      Serial.println(F("GLONASS !"));
+      setStatusByte(GLONASSisoutput, 1);
+      GPS_SetGPMode();
+      GPS_SetCyclicMode();
+      sleepSecs(1);
+    }
+    else
+    {
+      setStatusByte(GLONASSisoutput, 0);            //GLONASS not detected
+    }
+#endif
+
+
+
   }
 
   //if here then there has been no fix and a timeout
   setStatusByte(GPSFix, 0);                       //set status bit to flag no fix
   Serial.println(F("No Fix"));
 
-#ifdef UBLOX
-  if (GNGGAFIXQ.age() < 2000)                     //check to see if GLONASS has gone active
-  {
-    Serial.println(F("GLONASS !"));
-    Setup_LoRaCommandMode();
-    send_Command(GLONASSDetected);
-    setStatusByte(GLONASSisoutput, 1);
-
-    GPS_SetGPMode();
-    sleepSecs(1);
-    GPS_SetCyclicMode();
-    sleepSecs(1);
-  }
-  else
-  {
-    setStatusByte(GLONASSisoutput, 0);            //GLONASS not detected
-  }
-#endif
-
   if (LeaveState == 0)
   {
-    //no fix but gpsWaitFix called with gpspower to be turned off on exit
-    GPS_Off(UseGPSPowerControl);
+    //no fix and gpsWaitFix called with gpspower to be turned off on exit
+    GPS_Off(DoGPSPowerSwitch);
   }
   else
   {
     //no fix but gpsWaitFix called with gpspower to be left on at exit
-    GPS_Off(DoNotUseGPSPowerControl);
+    GPS_Off(NoGPSPowerSwitch);
   }
 
   pulseWDI();
@@ -1312,7 +1344,6 @@ void sendTrackerBind()
   byte msb_CRC, lsb_CRC;
   unsigned int bindCRC;
 
-  //byte plength = 3;                          //the bind packet data will start at byte 4
   saveKeyin_buffer();                          //loads key in bytes 0,1,2,3 of TX buffer
 
   lora_TXEnd = 4;                              //this is where the bind data starts
@@ -1323,7 +1354,7 @@ void sendTrackerBind()
     lora_TXBUFF[lora_TXEnd++] = j;
   }
 
-  bindCRC = Memory_CRC(addr_StartBindData, addr_EndBindData);
+  bindCRC = Print_CRC_Bind_Memory();
   msb_CRC = highByte(bindCRC);
   lsb_CRC = lowByte(bindCRC);
   lora_TXBUFF[lora_TXEnd++] = lsb_CRC;
@@ -1335,7 +1366,7 @@ void sendTrackerBind()
 #endif
 
   lora_Send(0, lora_TXEnd, Bind, ramc_RemoteControlNode, ramc_ThisNode, 10, BindMode_Power, 0);
-  Print_CRC_Bind_Memory();
+
 }
 
 
@@ -1457,22 +1488,19 @@ void Print_CRC_Config_Memory()
 }
 
 
-void Print_CRC_Bind_Memory()
+unsigned int Print_CRC_Bind_Memory()
 {
   unsigned int returnedCRC = Memory_CRC(addr_StartBindData, addr_EndBindData);
-  Serial.print(F("CRC Bind "));
+  Serial.print(F("Local Bind CRC "));
   Serial.println(returnedCRC, HEX);
+  return returnedCRC;
 }
-
-
-//*******************************************************************************************************
 
 
 void setup()
 {
   unsigned long int i;
   unsigned int j;
-  ///unsigned long tempint;
 
   pinMode(LED1, OUTPUT);                  //for PCB LED
   pinMode(WDI, OUTPUT);                   //for Watchdog pulse input
@@ -1490,9 +1518,10 @@ void setup()
   Serial.println(F(aurthorname));
 
   pinMode(GPSPOWER, OUTPUT);              //in case power switching components are fitted
-  GPS_On(UseGPSPowerControl);              //this will power the GPSon
+  GPS_On(DoGPSPowerSwitch);               //this will power the GPSon
+  GPSonTime = millis();
 
-#ifdef USE_SERIALGPS
+#ifdef USING_SERIALGPS
   GPSserial.end();                        //but we dont want soft serial running for now, it interferes with the LoRa device
 #endif
 
@@ -1537,10 +1566,6 @@ void setup()
 #endif
 
   Print_CRC_Config_Memory();
-
-#ifdef write_CalibrationOffset
-  Memory_WriteInt(addr_CalibrationOffset, CalibrationOffset);
-#endif
 
   ramc_ThisNode = ThisNode;
 
@@ -1594,7 +1619,8 @@ void setup()
   GPS_Config_Error = false;                            //make sure GPS error flag is cleared
 
 #ifndef DEBUGNoGPS
-  GPS_On(GPSPowerControl);                               //GPS should have been on for a while by now, so this is just to start soft serial
+  GPS_On(DoGPSPowerSwitch);                                 //GPS should have been on for a while by now, so this is just to start soft serial
+  GPSonTime = millis();
   GPS_Setup();                                           //GPS should have had plenty of time to initialise by now
 
 #ifdef UBLOX
@@ -1603,6 +1629,11 @@ void setup()
     Serial.println();
     GPS_Config_Error = true;
     setStatusByte(GPSError, 1);
+    setStatusByte(UBLOXDynamicModel6Set, 0);
+  }
+  else
+  {
+    setStatusByte(UBLOXDynamicModel6Set, 1);
   }
 #endif
 
@@ -1610,16 +1641,16 @@ void setup()
   {
     Serial.println(F("Warning GPS Error !"));
     Serial.println();
-    send_Command(NoGPS);
+    send_Command(NoGPS);                                    //make sure receiver knows about GPS error
     led_Flash(100, 25);                                     //long very rapid flash for GPS error
   }
   else
   {
 #ifdef CheckTone
-    if (readConfigByte(TXEnable))                          //is TX enabled - needed because of fence limits
+    if (readConfigByte(TXEnable))                           //is TX enabled - needed because of fence limits
     {
       Serial.println(F("Check Tone"));
-      lora_Tone(1000, 3000, 5);                            //Transmit an FM tone, 1000hz, 3000ms, 5dBm
+      lora_Tone(1000, 3000, 5);                             //Transmit an FM tone, 1000hz, 3000ms, 5dBm
     }
 #endif
   }
@@ -1641,6 +1672,9 @@ void setup()
   }
   addmASecs(GPSmA, (GPSFixTime + GPSShutdownTimemS), 3);   //add GPS consumed current to total
 #endif
+
+  GPS_SetCyclicMode();
+
 
   lora_Tone(500, 500, 2);                                  //Transmit an FM tone, 500hz, 500ms, 2dBm
   digitalWrite(LED1, LOW);

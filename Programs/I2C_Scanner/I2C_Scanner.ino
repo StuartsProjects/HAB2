@@ -1,5 +1,5 @@
 #define programname "I2C_Scanner"
-#define dateproduced "7/8/2017"
+#define dateproduced "2/10/2017"
 #define aurthorname "Stuart Robinson"
 
 /*
@@ -7,7 +7,7 @@
 
 Easy Build LoRaTracker Programs for Arduino
 
-Copyright of the author Stuart Robinson - 7/8/2017
+Copyright of the author Stuart Robinson - 2/10/2017
 
 http://www.LoRaTracker.uk
 
@@ -19,10 +19,11 @@ of the author Stuart Robinson.
 The programs are supplied as is, it is up to individual to decide if the programs are suitable for the intended purpose and
 free from errors.
 
-This program scans each address on the I2C bus and reports if a device was found.
+This program scans each address on the I2C bus and reports if a device was found, examples.
 
-BME280 0x76
+BME280 Sensor 0x76
 UBLOX GPS 0x42
+MB85RC16PNF FRAM 0x50,0x51,0x52,0x53,0x54,0x55,0x56,0x57
 
 
 ********************************************************************************************************************************
