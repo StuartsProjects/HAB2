@@ -31,8 +31,8 @@
 //#define External_TemperatureRead
 #define CPU_TemperatureRead
 
-#define Board_Definition "HAB2_Board_Definitions.h"  //define the board to use here       
-
+//#define Board_Definition "HAB2_Board_Definitions.h"  //define the board to use here       
+#define Board_Definition "Locator2_Board_Definitions.h"
 
 const float runmA = 4;                        //processor run current
 const float SleepmA = 0.22;                   //approx current in sleep, Ublox GPS consumes circa 200uA
@@ -135,7 +135,7 @@ const char key3 = 'a';
 //#define GPS_Library "UBLOX_I2CGPS.h"
 
 //#define DEBUGNoGPS                             //test mode, does not use GPS
-#define Use_Test_Location                        //to use test location for transmissions include this define
+//#define Use_Test_Location                        //to use test location for transmissions include this define
 
 //#define GPS_ALLOW_GPGSV                        //define this so that GPGSV senetences are not turned off 
 
