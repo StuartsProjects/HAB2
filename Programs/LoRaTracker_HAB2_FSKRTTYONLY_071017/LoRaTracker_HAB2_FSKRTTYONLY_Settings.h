@@ -142,7 +142,7 @@ const byte sync_chars = 3;                          //number of extra $ sync cha
 
 //****************************************************************************************************
 // 11) Program Default Option settings
-//    This section determins which options are on or off by default, this is the default_config byte
+//    This section determins which options are on or off by default, this is the default_config1 byte
 //    Take care here..........
 //**************************************************************************************************
 
@@ -156,7 +156,7 @@ const char option_CheckFence = OptionOff;
 const char option_ShortPayloadEnable = OptionOff;
 const char option_RepeatEnable = OptionOff;
 const char option_AddressStrip = OptionOn;
-const char option_GPSPowerSave = OptionOff;
+const char option_GPSHotFix = OptionOff;
 
 #define option_SearchEnable_SUM (option_SearchEnable*1)
 #define option_TXEnable_SUM (option_TXEnable*2)
@@ -165,13 +165,15 @@ const char option_GPSPowerSave = OptionOff;
 #define option_ShortPayloadEnable_SUM (option_ShortPayloadEnable*16)
 #define option_RepeatEnable_SUM (option_RepeatEnable*32)
 #define option_AddressStrip_SUM (option_AddressStrip*64)
-#define option_GPSPowerSave_SUM (option_GPSPowerSave*128)
+#define option_GPSHotFix_SUM (option_GPSHotFix*128)
 
-const unsigned int Default_config1 = (option_SearchEnable_SUM + option_TXEnable_SUM + option_FSKRTTYEnable_SUM + option_CheckFence_SUM + option_ShortPayloadEnable_SUM + option_RepeatEnable_SUM + option_AddressStrip_SUM + option_GPSPowerSave_SUM);
+//See Program_Definitions.h in the LoRaTracker library for details, the above options translate into Default_config1 byte of 1 + 2 + 4 + 64 = 71
+
+const unsigned int Default_config1 = (option_SearchEnable_SUM + option_TXEnable_SUM + option_FSKRTTYEnable_SUM + option_CheckFence_SUM + option_ShortPayloadEnable_SUM + option_RepeatEnable_SUM + option_AddressStrip_SUM + option_GPSHotFix_SUM);
 const unsigned int Default_config2 = 0;
 const unsigned int Default_config3 = 0;
 const unsigned int Default_config4 = 0;
-//const unsigned int const_Default_config = 196;   //Phew, the default config can always be set manually .............
+//const unsigned int const_Default_config = 71;   //Phew, the default config can always be set manually .............
 
 
 //**************************************************************************************************

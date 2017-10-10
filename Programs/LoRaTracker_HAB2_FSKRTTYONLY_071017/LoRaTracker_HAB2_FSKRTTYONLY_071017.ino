@@ -7,13 +7,13 @@
 //
 //**************************************************************************************************
 
-#define programname "LoRaTracker_HAB2_010817"
+#define programname "LoRaTracker_HAB2_FSKRTTYONLY_010817"
 #define aurthorname "Stuart Robinson"
 
 #include <Arduino.h>
 #include <avr/pgmspace.h>
 
-#include "LoRaTracker_HAB2_Settings.h"
+#include "LoRaTracker_HAB2_FSKRTTYONLY_Settings.h"
 #include Board_Definition
 #include "Program_Definitions.h"
 
@@ -40,11 +40,8 @@
   0           1      2   3   4   5    6      7            8         9        10         11        12       13         14        15
 
   To Do:
-  GPSoff time may be incorrect at initial lock
-  check GPSserial.end() used to prevent timing issues
-  check USING_SERIALGPS, USING_I2CGPS, applied in all gps libraries
-  hide commnads like #define Use_Test_Location
-  Check WhenNoGPSFix LeaveOn
+  Check GPS Cyclic mode setting.
+ 
   Changes:
 
 **************************************************************************************************
@@ -56,27 +53,11 @@ char ramc_ThisNode;
 int ramc_CalibrationOffset;
 
 unsigned long ramc_TrackerMode_Frequency;           //frequencies, and other parameters, are copied from memory into RAM.
-unsigned long ramc_SearchMode_Frequency;            //this is so that these parameters can be changed in flight and then
-unsigned long ramc_CommandMode_Frequency;           //copied into memory so that they survive reset.
-
-byte ramc_TrackerMode_Bandwidth;
-byte ramc_TrackerMode_SpreadingFactor;
-byte ramc_TrackerMode_CodeRate;
 byte ramc_TrackerMode_Power;
 byte TRStatus;                                      //used to store current status flag bits
 
-byte ramc_SearchMode_Bandwidth;
-byte ramc_SearchMode_SpreadingFactor;
-byte ramc_SearchMode_CodeRate;
-byte ramc_SearchMode_Power;
-
-byte ramc_CommandMode_Bandwidth;
-byte ramc_CommandMode_SpreadingFactor;
-byte ramc_CommandMode_CodeRate;
-byte ramc_CommandMode_Power;
 
 byte ramc_Current_TXconfig1;                        //sets the config of whats transmitted etc
-byte ramc_Cmd_WaitSecs;
 byte stripvalue;
 byte sats;                                          //either sats in view from GPGSV or sats from NMEA fix sentence
 int internal_temperature;
@@ -86,10 +67,6 @@ unsigned int ramc_Sleepsecs;                        //seconds for sleep at end o
 unsigned int ramc_WaitGPSFixSeconds;                //in flight mode, default time to wait for a fix
 unsigned int ramc_FSKRTTYbaudDelay;                 //dealy used in FSKRTTY routine to give chosen baud rate
 
-unsigned long UPTime = 0;
-unsigned long UPStart = 0;
-unsigned long current_mASecs = 0;                   //running total of mAseconds used
-unsigned long current_Sleepsecs = 0;
 
 float Fence_Check_Lon;                              //used for fence check
 
@@ -97,7 +74,6 @@ float TRLat;                                        //tracker transmitter co-ord
 float TRLon;
 unsigned int TRAlt;
 
-byte ramc_promiscuous_Mode;
 byte ramc_FSKRTTYRegshift;
 byte ramc_FSKRTTYpips;
 unsigned int ramc_FSKRTTYleadin;
@@ -109,7 +85,7 @@ byte keypress;
 
 unsigned long GPSonTime;
 unsigned long GPSFixTime;
-boolean GPS_Config_Error;
+boolean GPS_Config_Error; 
 
 
 #include Board_Definition                            //include previously defined board file
@@ -131,25 +107,17 @@ NeoSWSerial GPSserial(GPSRX, GPSTX);                 //this library is more rela
 
 #include "Voltage_Temperature.h"
 #include "LoRa3.h"
-#include "FSK_RTTY2.h"
+#include "FSK_RTTY3.h"                               //this version of FSK_RTTY has inverted pips.
 #include "Binary2.h"
 
 
 
 void loop()
 {
-  UPStart = millis();                                 //set the start time for UPtime
   Serial.println();
   Serial.println();
-  lora_TXTime = 0;
-  lora_RXTime = 0;
-  UPTime = 0;
   GPSFixTime = 0;
-  printTimes();
   internal_temperature = (int) read_Temperature();    //read temp just after sleep, when CPU is closest to ambient
-
-  wait_Command();                                     //Put this here as a check of what happens to GPS if its left on and there is a TX.
-
 
   GPSonTime = millis();
   gpsWaitFix(ramc_WaitGPSFixSeconds, SwitchOn, LeaveOn);
@@ -159,17 +127,6 @@ void loop()
   TRLon = TestLongitude;
   TRAlt = TestAltitude;
 #endif
-
-  wait_Command();                                     //wait for incoming command
-
-  if (readConfigByte(DozeEnable))
-  {
-    Serial.println(F("Doze"));
-    updatemAUsed();
-    printTimes();
-    sleepSecs(DozeSleepSecs);                         //tracker has doze made enabled, so just doze awhile and do not send transmissions
-    return;
-  }
 
   if (readConfigByte(CheckFence) && (!doFenceCheck()))      //if fence check is enabled and tracker is outside fence
   {
@@ -188,47 +145,11 @@ void loop()
     }
   }
 
-  updatemAUsed();
-  printTimes();
-  digitalWrite(lora_NSS, HIGH);                             //take NSS line high, makes sure LoRa device is off
   sleepSecs(ramc_Sleepsecs);                                //this sleep is used to set overall transmission cycle time
 
 }
 
 
-void wait_Command()
-{
-  byte index;
-  pulseWDI();
-  lora_Setup();                                              //resets then sets up LoRa device
-  Setup_LoRaCommandMode();                                   //commands can be sent in any mode, make sure this is sent using the right frequency etc
-  send_Command(ClearToSendCommand);                          //indicate ready for command
-
-  lora_RXPacketType = 0;                                     //use as flag to tell if anything received during listen
-  Listen(Cmd_WaitSecs);                                      //wait for command packet
-
-  if (lora_RXPacketType > 0)
-  {
-    do
-    {
-      //there was activity during previous listen
-      lora_RXPacketType = 0;
-
-      for (index = 1; index <= Command_Loops; index++)
-      {
-        Setup_LoRaCommandMode();                              //commands can be sent in any mode, make sure this is sent using the right frequency etc
-        send_Command(ClearToSendCommand);
-        Listen(Cmd_WaitSecs);
-      }
-
-    }  while (lora_RXPacketType > 0);                         //wait until the extended listen exits with no packet received
-
-  }
-  else
-  {
-    Serial.println(F("No RX"));
-  }
-}
 
 
 void do_Transmissions()
@@ -242,19 +163,9 @@ void do_Transmissions()
   Setup_LoRaTrackerMode();
 
   incMemoryULong(addr_SequenceNum);                                  //increment sequence number
-  Count = buildHABPacket(lora_TXBUFF);
-  buildHABPacket(lora_TXBUFF);
+  Count = buildHABPacket();
   stripvalue = readConfigByte(AddressStrip);
-  Serial.println(F("Send HAB Packet"));
-  printPayload(Count);
-  Serial.println();
-  digitalWrite(LED1, HIGH);
-  lora_Send(0, Count, HABPacket, Broadcast, ramc_ThisNode, 10, lora_Power, stripvalue);   //send the packet, data is in TXbuff from lora_TXStart to lora_TXEnd
-  digitalWrite(LED1, LOW);
 
-  sleepSecs(delayforAFSKuploadSecs);                                 //allow time for receiver AFSK upload
-
-  sleepSecs(delayforRelaysecs);                                      //wait for relay to operate
 
   if (readConfigByte(FSKRTTYEnable))
   {
@@ -277,27 +188,24 @@ void do_Transmissions()
     Send_FSKRTTY(13, FSKRTTYbaudDelay);                        //finish RTTY with carriage return
     Send_FSKRTTY(10, FSKRTTYbaudDelay);                        //and line feed
     digitalWrite(LED1, LOW);                                   //make sure LED off
-    lora_TXOFF();                                              //to ensure TXTime updated correctly
-  }
 
-  if (readConfigByte(SearchEnable))
-  {
-    Setup_LoRaSearchMode();                                    //setup is here so that any mode can be used to TX binary packet
-    send_LocationBinary(TRLat, TRLon, TRAlt);
+    #ifndef ConstantTX  
+    lora_TXOFF();                                              //turns off transmit
+    #endif
+    
   }
-
 }
 
 
-byte buildHABPacket(byte *lora_TXBUFF)                         //note that expects a char buffer, so this routine might not work without the -
+byte buildHABPacket()                         //expects a char buffer, so this routine will not work without the -permissive setting
 {
   //build the long tracker payload
   unsigned int index, j, CRC, resets, runmAhr;
   int volts;
-  byte Count;
+  byte Count,len;
   char LatArray[12], LonArray[12];
 
-  unsigned long fixtime;
+  //unsigned long fixtime;
   unsigned long sequence;
 
   sequence = Memory_ReadULong(addr_SequenceNum);               //sequence number is kept in non-volatile memory so it survives resets
@@ -308,7 +216,7 @@ byte buildHABPacket(byte *lora_TXBUFF)                         //note that expec
   Serial.print("Temperature ");
   Serial.println(internal_temperature);
 
-  runmAhr = (current_mASecs / 3600);
+  runmAhr = 0;
 
   volts = read_SupplyVoltage();
 
@@ -321,9 +229,10 @@ byte buildHABPacket(byte *lora_TXBUFF)                         //note that expec
   sats = gps.satellites.value();
   dtostrf(TRLat, 7, 5, LatArray);                              //format is dtostrf(FLOAT,WIDTH,PRECISION,BUFFER);
   dtostrf(TRLon, 7, 5, LonArray);                              //converts float to character array
-  memset(lora_TXBUFF, 0, sizeof(lora_TXBUFF));                 //clear array
+  len = sizeof(lora_TXBUFF);
+  memset(lora_TXBUFF, 0, len);                                 //clear array to 0s
 
-  Count = snprintf(lora_TXBUFF,
+  Count = snprintf((char*) lora_TXBUFF,
                    Output_len_max,
                    "$$$$%s,%lu,%02d:%02d:%02d,%s,%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%lu",
                    Flight_ID,
@@ -345,7 +254,7 @@ byte buildHABPacket(byte *lora_TXBUFF)                         //note that expec
                    GPSFixTime
                   );
 
-  Count = strlen(lora_TXBUFF);                    //how long is the array ?
+  //Count = strlen(lora_TXBUFF);                    //how long is the array ?
 
   CRC = 0xffff;                                   //start value for CRC16
 
@@ -370,7 +279,7 @@ byte buildHABPacket(byte *lora_TXBUFF)                         //note that expec
 }
 
 
-char Hex(char lchar)
+char Hex(byte lchar)
 {
   //used in CRC calculation in buildHABPacket
   char Table[] = "0123456789ABCDEF";
@@ -378,35 +287,16 @@ char Hex(char lchar)
 }
 
 
-
-void send_LocationBinary(float Lat, float Lon, unsigned int Alt)
-{
-  Write_Float(0, Lat, lora_TXBUFF);
-  Write_Float(4, Lon, lora_TXBUFF);
-  Write_Int(8, Alt, lora_TXBUFF);
-  Write_Byte(10, TRStatus, lora_TXBUFF);
-
-  digitalWrite(LED1, HIGH);
-  Serial.println(F("Send Binary Location"));
-  lora_Send(0, 10, LocationBinaryPacket, Broadcast, ramc_ThisNode, 10, lora_Power, 0);   //send the packet, data is in TXbuff from lora_TXStart to lora_TXEnd
-  digitalWrite(LED1, LOW);
-}
-
-
 void inside_fence_no_transmit()
 {
-  Setup_LoRaCommandMode();                                   //commands can be sent in any mode, make sure this is sent using the right frequency etc
-  Listen(ramc_Cmd_WaitSecs);                                 //wait for command packet}
+//null nothing to do  
 }
 
 
 void action_outside_fence()
 {
   sleepSecs(outside_fence_Sleep_seconds);                    //goto sleep for a long time
-  lora_Setup();
-  Setup_LoRaCommandMode();
-  Listen(Cmd_WaitSecs);
-  Listen(Cmd_WaitSecs);
+  
 }
 
 
@@ -448,282 +338,6 @@ void printPayload(byte lCount)
 }
 
 
-void updatemAUsed()
-{
-  unsigned long i;
-  Serial.println(F("Update mA Used"));
-  addmASecs(TXmA, lora_TXTime, 1);                            //add TXTime current consumed current to total
-  addmASecs(RXmA, lora_RXTime, 2);                            //add RXTime current consumed current to total
-
-  if (readConfigByte(GPSHotFix))
-  {
-    addmASecs(GPSmA, (GPSFixTime + GPSShutdownTimemS), 3);    //add GPS consumed current to total only if power save (GPSHotFix) enabled
-  }
-
-  UPTime = (millis() - UPStart);
-  addmASecs(runmA, UPTime, 4);                                //add run current consumed current to total
-  i = current_Sleepsecs * 1000;                               //convert total Sleepsecs this loop into mS
-  addmASecs(SleepmA, i, 5);
-  Memory_WriteULong(addr_mASecs, current_mASecs);             //save running mASecs into memory
-  current_Sleepsecs = 0;
-}
-
-
-void addmASecs(float lmAamp, unsigned long lmillis, byte number)
-{
-  //adds to the running total of current_mASecs, i.e 10mA for 2000mS = 20mAmS
-  //for a long unsigned int max Count = 4294967296 or 4294967 mAMins or 71582 maHr
-  unsigned long i;
-  i = (unsigned long) ((lmillis * lmAamp) / 1000) ;           //calculate the mASecs, divide the time by 1000
-  current_mASecs = current_mASecs + i;
-  Serial.print(number);
-  Serial.print(F(" mASecs "));
-  Serial.println(current_mASecs);
-}
-
-
-void printTimes()
-{
-  //print the times used to calculate mAhr used
-  Serial.print(F("TXTime "));
-  Serial.print(lora_TXTime);
-  Serial.println(F("mS"));
-  Serial.print(F("RXTime "));
-  Serial.print(lora_RXTime);
-  Serial.println(F("mS"));
-  Serial.print(F("UPTime "));
-  Serial.print((millis() - UPStart));
-  Serial.println(F("mS"));
-  Serial.print(F("mASecs "));
-  Serial.println(current_mASecs);
-  Serial.print(F("mAHour "));
-  Serial.println((current_mASecs) / 3600);
-}
-
-
-void Listen(unsigned int seconds)
-{
-  //listen (in seconds) for an incoming packet using the current frequency and LoRa modem settings
-  unsigned long tilltime;
-  tilltime = (millis() + (seconds * 1000));
-  Serial.print(F("Listen "));
-  Serial.println(seconds);
-
-  lora_RXONLoRa();
-
-  while (millis() < tilltime)
-  {
-    checkForPacket();
-  }
-  lora_RXOFF();                                     //as we have finished listening
-}
-
-
-byte checkForPacket()
-{
-  //check LoRa device to see if a packet has arrived
-  byte lora_LRegData;
-  byte lora_Ltemp;
-
-  lora_Ltemp = lora_readRXready();
-
-  if (lora_Ltemp > 0)
-  {
-
-    Serial.print(F("RX "));
-
-    if (lora_Ltemp == 64)
-    {
-      //packet has arrived
-      lora_ReadPacket();
-
-#ifdef DEBUG
-      Serial.write(lora_RXPacketType);
-      Serial.write(lora_RXDestination);
-      Serial.write(lora_RXSource);
-      Serial.println();
-#endif
-    }
-    else
-    {
-      //packet arrived with error
-      Serial.println(F("Error"));
-      lora_RXOFF;
-      lora_RXONLoRa();
-    }
-
-    if (promiscuous_Mode)                           //can we accept packet from any source
-    {
-      processPacket();
-      lora_RXONLoRa();
-    }
-
-    if (!promiscuous_Mode)                          //can we only accepts packet from known node
-    {
-      if (lora_RXSource == ramc_RemoteControlNode)
-      {
-        processPacket();
-        lora_RXONLoRa();                            //ready for next and clear flags
-      }
-      else
-      {
-        Serial.println(F("Rejected"));
-        lora_RXOFF;
-        Setup_LoRaCommandMode();
-        send_Command(NACK);
-        lora_RXONLoRa();
-      }
-    }
-  }
-}
-
-
-void processPacket()
-{
-  //we have a packet so lets decide what to do with it
-  byte i, j, ptr;
-
-  if (lora_RXPacketType == Test)
-  {
-    if (lora_RXBUFF[0] == '0')
-    {
-      Serial.println(F("Pkt Test"));
-      delay(inter_Packet_delay);
-      Setup_LoRaCommandMode();
-      send_Command(ACK);
-      delay(inter_Packet_delay);
-      sendTest();
-    }
-
-    if (lora_RXBUFF[0] == '1')
-    {
-      Serial.println(F("FSKRTTY Test"));
-      delay(inter_Packet_delay);
-      Setup_LoRaCommandMode();
-      send_Command(ACK);
-      delay(inter_Packet_delay);
-      Send_FSKRTTYTest();
-    }
-
-  }
-
-  if (lora_RXPacketType == LinkReport)
-  {
-    send_Command(ACK);
-    delay(inter_Packet_delay);
-    Serial.println(F("Link Report"));
-    delay(inter_Packet_delay);
-    Setup_LoRaCommandMode();
-    send_Command(Info);
-  }
-
-
-  if (lora_RXPacketType == Config0)                   //is it a change config byte request ?
-  {
-    Serial.println(F("Prog Cfgbyte"));
-
-    i = ((lora_RXBUFF[0] - 48));                      //config byte requests come in as ASCCI, '1' for 1 etc
-    j = ((lora_RXBUFF[1] - 48));
-    setConfigByte(i, j);
-    lora_RXBuffPrint(0);                              //print packet contents as ASCII
-    Serial.println();
-    delay(inter_Packet_delay);
-    Setup_LoRaCommandMode();
-    send_Command(ACK);                                //send the ack
-
-  }
-
-  if (lora_RXPacketType == ResetTracker)              //is it a reset ?
-  {
-    Serial.println(F("Reset ?"));
-    lora_RXBuffPrint(0);                              //print packet contents as ASCII
-    Serial.println();
-
-    if ( isKeyValid() )
-    {
-      Serial.println(F("Valid"));
-      delay(inter_Packet_delay);
-      Setup_LoRaCommandMode();
-      send_Command(ACK);
-      Serial.flush();
-      sleepSecs(2);
-      softReset();
-    }
-    else
-    {
-      Serial.println(F("Invalid"));
-      delay(inter_Packet_delay);
-      Setup_LoRaCommandMode();
-      send_Command(NACK);
-    }
-  }
-
-  if (lora_RXPacketType == WritePacketMemory)
-  {
-    Serial.println(F("Write Memory"));
-    writePacketMemory();
-    delay(inter_Packet_delay);
-    Setup_LoRaCommandMode();
-    send_Command(ACK);
-  }
-
-  if (lora_RXPacketType == INCFreq)
-  {
-    Serial.println(F("IncOffset 1KHZ"));
-    ramc_CalibrationOffset = ramc_CalibrationOffset + 1000;
-    delay(inter_Packet_delay);
-    Setup_LoRaCommandMode();
-    send_Command(ACK);
-    Memory_WriteInt(addr_CalibrationOffset, ramc_CalibrationOffset);
-    printRAMFrequencies();
-  }
-
-  if (lora_RXPacketType == DECFreq)
-  {
-    Serial.println(F("DecOffset 1KHZ"));
-    ramc_CalibrationOffset = ramc_CalibrationOffset - 1000;
-    delay(inter_Packet_delay);
-    Setup_LoRaCommandMode();
-    send_Command(ACK);
-    Memory_WriteInt(addr_CalibrationOffset, ramc_CalibrationOffset);
-    printRAMFrequencies();
-  }
-
-  if (lora_RXPacketType == Bind)
-  {
-
-    if (isKeyValid())                                           //only accept bind request when key is valid
-    {
-
-      ptr = 4;                                                  //bind packet has 4 bytes of key
-      Serial.println(F("Bind RX"));
-
-      for (i = addr_StartConfigData; i <= addr_EndConfigData; i++)
-      {
-        j = lora_RXBUFF[ptr++];
-        Memory_WriteByte(i, j);
-      }
-
-      readSettingsMemory();
-
-#ifdef DEBUG
-      printMemoryFrequencies();
-      printRAMFrequencies();
-      Print_Config_Memory();
-      Print_CRC_Config_Memory();
-#endif
-
-      delay(inter_Packet_delay);
-      send_Command(ACK);
-    }
-    else
-    {
-      Serial.println(F("Key not valid"));
-    }
-
-  }
-}
-
 
 void printMemoryFrequencies()
 {
@@ -733,13 +347,6 @@ void printMemoryFrequencies()
   Serial.print(F("Memory Tracker Frequency "));
   Serial.println(tempULong);
 
-  tempULong = Memory_ReadULong(addr_SearchMode_Frequency);
-  Serial.print(F("Memory Search Frequency "));
-  Serial.println(tempULong);
-
-  tempULong = Memory_ReadULong(addr_CommandMode_Frequency);
-  Serial.print(F("Memory Command Frequency "));
-  Serial.println(tempULong);
 }
 
 
@@ -747,111 +354,11 @@ void printRAMFrequencies()
 {
   Serial.print(F("RAM Tracker Frequency "));
   Serial.println(ramc_TrackerMode_Frequency);
-
-  Serial.print(F("RAM Search Frequency "));
-  Serial.println(ramc_SearchMode_Frequency);
-
-  Serial.print(F("RAM Command Frequency "));
-  Serial.println(ramc_CommandMode_Frequency);
-
+ 
   Serial.print(F("RAM Calibration Offset "));
   Serial.println(ramc_CalibrationOffset);
 }
 
-
-boolean isKeyValid()
-{
-  if ( (lora_RXBUFF[0] == key0) && (lora_RXBUFF[1] == key1)  && (lora_RXBUFF[2] == key2)  && (lora_RXBUFF[3] == key3) )
-  {
-    return true;
-  }
-  else
-  {
-    return false;
-  }
-}
-
-
-void softReset()
-{
-  asm volatile ("  jmp 0");
-}
-
-
-void send_Command(char cmd)
-{
-  unsigned int volts;
-  volts = read_SupplyVoltage();
-  Serial.print(F("Send Cmd "));
-  Serial.write(cmd);
-  Serial.println();
-  Write_Byte(0, lora_PacketSNR, lora_TXBUFF);                         //so that receiver alwsys knows last received SNR
-  Write_Byte(1, lora_PacketRSSI, lora_TXBUFF);                        //so that receiver alwsys knows last received RSSI
-  Write_UInt(2, volts, lora_TXBUFF);
-  Write_Byte(4, TRStatus, lora_TXBUFF);
-  digitalWrite(LED1, HIGH);
-  lora_Send(0, 4, cmd, Broadcast, ramc_ThisNode, 10, lora_Power, 0);
-  digitalWrite(LED1, LOW);
-}
-
-
-void sendTest()
-{
-  byte power;
-  for (power = 10; power >= 2; power--)
-  {
-    Setup_LoRaTrackerMode();
-    lora_TXBUFF[0] = '0';
-    lora_TXBUFF[1] = power + 48;
-
-    if (power == 10)
-    {
-      lora_TXBUFF[0] = '1';
-      lora_TXBUFF[1] = '0';
-    }
-
-    Serial.print(F("Send "));
-    lora_TXBuffPrint(0);
-    Serial.write(lora_TXBUFF[1]);
-    Serial.println();
-
-    lora_Send(0, 1, Test, Broadcast, ramc_ThisNode, 10, power, 0);     //send the test packet
-    sleepSecs(2);
-  }
-}
-
-
-void Send_FSKRTTYTest()
-{
-  byte power;
-
-  Start_FSKRTTY(FSKRTTYRegshift, FSKRTTYleadin, FSKRTTYpips);
-  Send_FSKRTTY(13, FSKRTTYbaudDelay);
-  Send_FSKRTTY(10, FSKRTTYbaudDelay);
-
-  for (power = 10; power >= 2; power--)
-  {
-    lora_TXONDirect(power);
-    delay(200);
-    Send_FSKRTTY(' ', FSKRTTYbaudDelay);
-
-
-    if (power == 10)
-    {
-      Send_FSKRTTY('1', FSKRTTYbaudDelay);
-      Send_FSKRTTY('0', FSKRTTYbaudDelay);
-    }
-    else
-    {
-      Send_FSKRTTY('0', FSKRTTYbaudDelay);
-      Send_FSKRTTY(power + 48, FSKRTTYbaudDelay);
-    }
-    delay(200);
-  }
-  Send_FSKRTTY(13, FSKRTTYbaudDelay);
-  Send_FSKRTTY(10, FSKRTTYbaudDelay);
-  lora_Setup();
-}
 
 
 void sleepSecs(unsigned int LNumberSleeps)
@@ -861,9 +368,11 @@ void sleepSecs(unsigned int LNumberSleeps)
   Serial.print(F("zz "));
   Serial.println(LNumberSleeps);
   Serial.flush();                                      //let print complete
-#ifdef USING_SERIALGPS
-  GPSserial.end();                                     //we dont want GPS input interfering with sleep, make sure its off
-#endif
+  
+  #ifdef USING_SERIALGPS
+  GPSserial.end();                                     //we dont want GPS input interfering with sleep
+  #endif
+  
   digitalWrite(lora_NSS, HIGH);                        //ensure LoRa Device is off
 
   for (i = 1; i <= LNumberSleeps; i++)
@@ -871,7 +380,7 @@ void sleepSecs(unsigned int LNumberSleeps)
     LowPower.powerDown(SLEEP_1S, ADC_OFF, BOD_OFF);    //sleep 1 second
     pulseWDI();
   }
-  current_Sleepsecs = current_Sleepsecs + LNumberSleeps;
+  
 }
 
 
@@ -889,34 +398,6 @@ byte readConfigByte(byte bitnum)
   return bitRead(ramc_Current_TXconfig1, bitnum);
 }
 
-
-void setConfigByte(byte bitnum, byte bitval)
-{
-  //program the config byte
-
-  if (bitval == 0)
-  {
-    bitClear(ramc_Current_TXconfig1, bitnum);
-  }
-  else
-  {
-    bitSet(ramc_Current_TXconfig1, bitnum);
-  }
-  Memory_WriteByte(addr_Default_config1, ramc_Current_TXconfig1);
-
-#ifdef DEBUG
-  if (bitval)
-  {
-    Serial.print(F("Set Config Bit "));
-  }
-  else
-  {
-    Serial.print(F("Clear Config Bit "));
-  }
-  Serial.println(bitnum);
-
-#endif
-}
 
 
 void setStatusByte(byte bitnum, byte bitval)
@@ -966,7 +447,7 @@ boolean gpsWaitFix(unsigned long waitSecs, byte StartState, byte LeaveState)
   unsigned long endwaitmS, millistowait, currentmillis;
   pulseWDI();
   byte GPSByte;
-  long temp;
+
 
   if (StartState == 1)
   {
@@ -978,16 +459,16 @@ boolean gpsWaitFix(unsigned long waitSecs, byte StartState, byte LeaveState)
     GPS_On(NoGPSPowerSwitch);
   }
 
-#ifdef Check_GPS_Navigation_Model_OK
+  #ifdef Check_GPS_Navigation_Model_OK 
   Serial.println(F("Checking Navigation Model"));
   if (!GPS_CheckNavigation())
   {
-    //something wrong with GPS, navigation mode not set so reconfigure the GPS
-    Serial.println(F("GPS Configuration Error !!!!"));
-    GPS_Setup();
+  //something wrong with GPS, navigation mode not set so reconfigure the GPS
+  Serial.println(F("GPS Configuration Error !!!!"));
+  GPS_Setup();  
   }
-#endif
-
+  #endif
+  
 
   Serial.print(F("Wait Fix "));
   Serial.print(waitSecs);
@@ -1030,7 +511,6 @@ boolean gpsWaitFix(unsigned long waitSecs, byte StartState, byte LeaveState)
       {
         GPS_Off(DoGPSPowerSwitch);
         GPSFixTime = (millis() - GPSonTime);
-        //GPSoffTime = millis();
         Serial.print(F("GPS Fix Time "));
         Serial.print(GPSFixTime);
         Serial.println(F("mS"));
@@ -1051,7 +531,7 @@ boolean gpsWaitFix(unsigned long waitSecs, byte StartState, byte LeaveState)
       Serial.println(F("GLONASS !"));
       setStatusByte(GLONASSisoutput, 1);
       GPS_SetGPMode();
-      GPS_SetCyclicMode();
+      //GPS_SetCyclicMode();
       sleepSecs(1);
     }
     else
@@ -1092,41 +572,18 @@ void readSettingsDefaults()
   //receiver.
   Serial.println(F("Config Defaults"));
   ramc_TrackerMode_Frequency = TrackerMode_Frequency;
-  ramc_TrackerMode_Bandwidth = TrackerMode_Bandwidth;
-  ramc_TrackerMode_SpreadingFactor = TrackerMode_SpreadingFactor;
-  ramc_TrackerMode_CodeRate = TrackerMode_CodeRate;
   ramc_TrackerMode_Power = TrackerMode_Power;
 
-  ramc_SearchMode_Frequency = SearchMode_Frequency;
-  ramc_SearchMode_Bandwidth = SearchMode_Bandwidth;
-  ramc_SearchMode_SpreadingFactor = SearchMode_SpreadingFactor;
-  ramc_SearchMode_CodeRate = SearchMode_CodeRate;
-  ramc_SearchMode_Power = SearchMode_Power;
-
-  ramc_CommandMode_Frequency = CommandMode_Frequency;
-  ramc_CommandMode_Bandwidth = CommandMode_Bandwidth;
-  ramc_CommandMode_SpreadingFactor = CommandMode_SpreadingFactor;
-  ramc_CommandMode_CodeRate = CommandMode_CodeRate;
-  ramc_CommandMode_Power = CommandMode_Power;
-
   ramc_ThisNode = ThisNode;
-  ramc_RemoteControlNode = RemoteControlNode;
 
   ramc_Current_TXconfig1 = Default_config1;
-  ramc_Cmd_WaitSecs = Cmd_WaitSecs;
   ramc_WaitGPSFixSeconds = WaitGPSFixSeconds;
   ramc_Sleepsecs = Loop_Sleepsecs;
-  ramc_promiscuous_Mode = promiscuous_Mode;
 
   ramc_FSKRTTYbaudDelay = FSKRTTYbaudDelay;
   ramc_FSKRTTYRegshift = FSKRTTYRegshift;
   ramc_FSKRTTYpips = FSKRTTYpips;
   ramc_FSKRTTYleadin = FSKRTTYleadin;
-
-  ramc_key0 = key0;
-  ramc_key1 = key1;
-  ramc_key2 = key2;
-  ramc_key3 = key3;
 
   ramc_CalibrationOffset = CalibrationOffset;
 }
@@ -1141,32 +598,14 @@ void readSettingsMemory()
   Serial.println(F("Config from Memory"));
 
   ramc_TrackerMode_Frequency = Memory_ReadULong(addr_TrackerMode_Frequency);
-  ramc_TrackerMode_Bandwidth = Memory_ReadByte(addr_TrackerMode_Bandwidth);
-  ramc_TrackerMode_SpreadingFactor = Memory_ReadByte(addr_TrackerMode_SpreadingFactor);
-  ramc_TrackerMode_CodeRate = Memory_ReadByte(addr_TrackerMode_CodeRate);
   ramc_TrackerMode_Power = Memory_ReadByte(addr_TrackerMode_Power);
 
-  ramc_SearchMode_Frequency = Memory_ReadULong(addr_SearchMode_Frequency);
-  ramc_SearchMode_Bandwidth = Memory_ReadByte(addr_SearchMode_Bandwidth);
-  ramc_SearchMode_SpreadingFactor = Memory_ReadByte(addr_SearchMode_SpreadingFactor);
-  ramc_SearchMode_CodeRate = Memory_ReadByte(addr_SearchMode_CodeRate);
-  ramc_SearchMode_Power = Memory_ReadByte(addr_SearchMode_Power);
-
-  ramc_CommandMode_Frequency = Memory_ReadULong(addr_CommandMode_Frequency);
-  ramc_CommandMode_Bandwidth = Memory_ReadByte(addr_CommandMode_Bandwidth);
-  ramc_CommandMode_SpreadingFactor = Memory_ReadByte(addr_CommandMode_SpreadingFactor);
-  ramc_CommandMode_CodeRate = Memory_ReadByte(addr_CommandMode_CodeRate);
-  ramc_CommandMode_Power = Memory_ReadByte(addr_CommandMode_Power);
-
   ramc_ThisNode = Memory_ReadByte(addr_ThisNode);;
-  ramc_RemoteControlNode = Memory_ReadByte(addr_RemoteControlNode);;
-
+ 
   ramc_Current_TXconfig1 = Memory_ReadByte(addr_Default_config1);
-  ramc_Cmd_WaitSecs = Memory_ReadByte(addr_Cmd_WaitSecs);
   ramc_WaitGPSFixSeconds = Memory_ReadUInt(addr_WaitGPSFixSeconds);
   ramc_Sleepsecs = Memory_ReadUInt(addr_Sleepsecs);
-  ramc_promiscuous_Mode = Memory_ReadByte(addr_promiscuous_Mode);
-
+ 
   ramc_FSKRTTYbaudDelay = Memory_ReadUInt(addr_FSKRTTYbaudDelay);
   ramc_FSKRTTYRegshift = Memory_ReadByte(addr_FSKRTTYRegshift);
   ramc_FSKRTTYpips = Memory_ReadByte(addr_FSKRTTYpips);
@@ -1193,35 +632,16 @@ void writeSettingsMemory()
   writeIDMemory();
 
   Memory_WriteULong(addr_TrackerMode_Frequency, ramc_TrackerMode_Frequency);
-  Memory_WriteByte(addr_TrackerMode_Bandwidth, ramc_TrackerMode_Bandwidth);
-  Memory_WriteByte(addr_TrackerMode_SpreadingFactor, ramc_TrackerMode_SpreadingFactor);
-  Memory_WriteByte(addr_TrackerMode_CodeRate, ramc_TrackerMode_CodeRate);
   Memory_WriteByte(addr_TrackerMode_Power, ramc_TrackerMode_Power);
 
-  Memory_WriteULong(addr_SearchMode_Frequency, ramc_SearchMode_Frequency);
-  Memory_WriteByte(addr_SearchMode_Bandwidth, ramc_SearchMode_Bandwidth);
-  Memory_WriteByte(addr_SearchMode_SpreadingFactor, ramc_SearchMode_SpreadingFactor);
-  Memory_WriteByte(addr_SearchMode_CodeRate, ramc_SearchMode_CodeRate);
-  Memory_WriteByte(addr_SearchMode_Power, ramc_SearchMode_Power);
-
-  Memory_WriteULong(addr_CommandMode_Frequency, ramc_CommandMode_Frequency);
-  Memory_WriteByte(addr_CommandMode_Bandwidth, ramc_CommandMode_Bandwidth);
-  Memory_WriteByte(addr_CommandMode_SpreadingFactor, ramc_CommandMode_SpreadingFactor);
-  Memory_WriteByte(addr_CommandMode_CodeRate, ramc_CommandMode_CodeRate);
-  Memory_WriteByte(addr_CommandMode_Power, ramc_CommandMode_Power);
-
   Memory_WriteByte(addr_Default_config1, ramc_Current_TXconfig1);
-  Memory_WriteByte(addr_RemoteControlNode, ramc_RemoteControlNode);
-
+  
   Memory_WriteByte(addr_ThisNode, ramc_ThisNode);
-  Memory_WriteByte(addr_RemoteControlNode, ramc_RemoteControlNode);
-
+  
   Memory_WriteByte(addr_Default_config1, ramc_Current_TXconfig1);
-  Memory_WriteByte(addr_Cmd_WaitSecs, ramc_Cmd_WaitSecs);
   Memory_WriteUInt(addr_WaitGPSFixSeconds, ramc_WaitGPSFixSeconds);
   Memory_WriteUInt(addr_Sleepsecs, ramc_Sleepsecs);
-  Memory_WriteByte(addr_promiscuous_Mode, ramc_promiscuous_Mode);
-
+  
   Memory_WriteUInt(addr_FSKRTTYbaudDelay, ramc_FSKRTTYbaudDelay);
   Memory_WriteByte(addr_FSKRTTYRegshift, ramc_FSKRTTYRegshift);
   Memory_WriteByte(addr_FSKRTTYpips, ramc_FSKRTTYpips);
@@ -1242,7 +662,7 @@ void writeIDMemory()
   j = sizeof(Flight_ID);
   j--;
   addr = addr_FlightID;
-  for (i == 0; i <= j; i++)
+  for (i = 0; i <= j; i++)
   {
     Memory_WriteByte(addr, Flight_ID[i]);
     addr++;
@@ -1266,116 +686,10 @@ void readIDMemory()
 }
 
 
-void saveKeyin_buffer()
-{
-  lora_TXBUFF[0] = key0;       //key used in sme packets to reduce chances of a change being applied by accident
-  lora_TXBUFF[1] = key1;
-  lora_TXBUFF[2] = key2;
-  lora_TXBUFF[3] = key3;
-}
-
-
-void printMemoryChange(byte number)
-{
-#ifdef DEBUG
-  byte index, j;
-  Serial.print(F("Memory Change"));
-  for (index = 0; index <= number; index++)
-  {
-    j = lora_RXBUFF[index];
-    Serial.print(F(" "));
-    Serial.print(j, HEX);
-  }
-  Serial.println();
-#endif
-}
-
-
-byte writePacketMemory()
-{
-  //there is an incoming packet which is a request to write bytes to Memory.
-  //the effect is to change stored program definitions and constants
-  byte i, j, k, ptr, low, high;
-  unsigned int addr_Memory;
-  float tempfloat;
-
-  //packet format is key0, key1, key2, key3, number of bytes to write, address to write to, bytes to write
-  //terminate list with 0 bytes to write.
-
-  if (isKeyValid())
-  {
-    Serial.print(F("Not Valid"));
-    return 0;
-  }
-
-  i = lora_RXPacketL - 4;                      //end of packet will be length - 1 for 0 offset and -3 for adddress bytes
-
-  printMemoryChange(i);
-
-  ptr = 4;
-
-  j = lora_RXBUFF[ptr++];
-
-  addr_Memory = Read_Int(5, lora_RXBUFF);     //read address for frequency offset into buffer
-
-  ptr++;
-  ptr++;
-
-  Serial.println(F("Write memory "));
-
-  for (i = 1; i <= j; i++)
-  {
-    Memory_WriteByte(addr_Memory, lora_RXBUFF[ptr]);
-    k = lora_RXBUFF[ptr];
-    Serial.print(k, HEX);
-    Serial.print(F(" "));
-    addr_Memory++;
-    ptr++;
-  }
-  readSettingsMemory();
-  Setup_LoRaTrackerMode();                     //dummy change so we can see if offset chnages
-}
-
-
-
-void sendTrackerBind()
-{
-  int i, j;
-  byte msb_CRC, lsb_CRC;
-  unsigned int bindCRC;
-
-  saveKeyin_buffer();                          //loads key in bytes 0,1,2,3 of TX buffer
-
-  lora_TXEnd = 4;                              //this is where the bind data starts
-
-  for (i = addr_StartBindData; i <= addr_EndBindData; i++)
-  {
-    j =  Memory_ReadByte(i);
-    lora_TXBUFF[lora_TXEnd++] = j;
-  }
-
-  bindCRC = Print_CRC_Bind_Memory();
-  msb_CRC = highByte(bindCRC);
-  lsb_CRC = lowByte(bindCRC);
-  lora_TXBUFF[lora_TXEnd++] = lsb_CRC;
-  lora_TXBUFF[lora_TXEnd] = msb_CRC;
-
-#ifdef DEBUG
-  Serial.print(F("Bind Packet Length "));
-  Serial.println(lora_TXEnd + 4);               //allow for 3 addressing bytes in length, plus 1 for packet starting at [0]
-#endif
-
-  lora_Send(0, lora_TXEnd, Bind, ramc_RemoteControlNode, ramc_ThisNode, 10, BindMode_Power, 0);
-
-}
-
-
 void printNodes()
 {
   Serial.print(F("ThisNode "));
   Serial.print(ramc_ThisNode);
-  Serial.print(F("  RemoteNode "));
-  Serial.println(ramc_RemoteControlNode);
   Serial.println();
 }
 
@@ -1383,31 +697,7 @@ void printNodes()
 void Setup_LoRaTrackerMode()
 {
   lora_SetFreq(ramc_TrackerMode_Frequency, ramc_CalibrationOffset);
-  lora_SetModem2(ramc_TrackerMode_Bandwidth, ramc_TrackerMode_SpreadingFactor, ramc_TrackerMode_CodeRate, Explicit);  //Setup the LoRa modem parameters for tracker mode
   lora_Power = ramc_TrackerMode_Power;
-}
-
-
-void Setup_LoRaSearchMode()
-{
-  lora_SetFreq(ramc_SearchMode_Frequency, ramc_CalibrationOffset);
-  lora_SetModem2(ramc_SearchMode_Bandwidth, ramc_SearchMode_SpreadingFactor, ramc_SearchMode_CodeRate, Explicit);  //Setup the LoRa modem parameters for search mode
-}
-
-
-void Setup_LoRaCommandMode()
-{
-  lora_SetFreq(ramc_CommandMode_Frequency, ramc_CalibrationOffset);
-  lora_SetModem2(ramc_CommandMode_Bandwidth, ramc_CommandMode_SpreadingFactor, ramc_CommandMode_CodeRate, Explicit);  //Setup the LoRa modem parameters for command mode
-  lora_Power = ramc_CommandMode_Power;
-}
-
-
-void Setup_LoRaBindMode()
-{
-  lora_SetFreq(BindMode_Frequency, ramc_CalibrationOffset);
-  lora_SetModem2(BindMode_Bandwidth, BindMode_SpreadingFactor, BindMode_CodeRate, Explicit); //Setup the LoRa modem parameters for bind mode
-  lora_Power = BindMode_Power;
 }
 
 
@@ -1455,7 +745,7 @@ void Print_Config_Memory()
   byte memory_LLoopv2;
   unsigned int memory_Laddr = 0;
   byte memory_Ldata;
-  unsigned int CRC;
+  //unsigned int CRC;
   Serial.println(F("Config Memory"));
   Serial.print(F("Lcn    0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F"));
   Serial.println();
@@ -1495,6 +785,10 @@ unsigned int Print_CRC_Bind_Memory()
   Serial.println(returnedCRC, HEX);
   return returnedCRC;
 }
+
+
+
+//*******************************************************************************************************
 
 
 void setup()
@@ -1541,9 +835,6 @@ void setup()
 
   Serial.print(F("Config1 "));
   Serial.println(Default_config1, BIN);
-  current_mASecs = Memory_ReadULong(addr_mASecs);
-  Serial.print(F("current_mASecs "));
-  Serial.println(current_mASecs);
 
   j = Memory_ReadUInt(addr_ResetCount);
   j++;
@@ -1603,16 +894,7 @@ void setup()
   Write_Byte(2, ramc_Current_TXconfig1, lora_TXBUFF);  //add the current config byte
 
   Setup_LoRaTrackerMode();
-  send_Command(PowerUp);                                //send power up command, includes supply mV and config, on tracker settings
   sleepSecs(1);
-
-#ifdef SendBind
-  if (readConfigByte(TXEnable))   //is TX enabled ?
-  {
-    Setup_LoRaBindMode();
-    sendTrackerBind();
-  }
-#endif
 
   Setup_LoRaTrackerMode();                             //so that check tone is at correct frequency
 
@@ -1641,7 +923,6 @@ void setup()
   {
     Serial.println(F("Warning GPS Error !"));
     Serial.println();
-    send_Command(NoGPS);                                    //make sure receiver knows about GPS error
     led_Flash(100, 25);                                     //long very rapid flash for GPS error
   }
   else
@@ -1670,10 +951,13 @@ void setup()
     Serial.println(F(" Secs"));
 #endif
   }
-  addmASecs(GPSmA, (GPSFixTime + GPSShutdownTimemS), 3);   //add GPS consumed current to total
+  
 #endif
 
-  GPS_SetCyclicMode();
+#ifndef DEBUGNoGPS
+  GPS_On(DoGPSPowerSwitch);                                                 
+  GPS_SetCyclicMode();                                     //set this regardless of whether hot fix mode is enabled
+#endif
 
 
   lora_Tone(500, 500, 2);                                  //Transmit an FM tone, 500hz, 500ms, 2dBm
@@ -1684,7 +968,6 @@ void setup()
   setStatusByte(NoGPSTestMode, 1);
 #endif
 
-  setConfigByte(DozeEnable, Disabled);                     //ensure Doze mode disabled at reset
 }
 
 

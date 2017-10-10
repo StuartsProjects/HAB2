@@ -15,3 +15,18 @@ HAB2_UBLOX_EchoGPS_I2C - A test program for the UBLOX GPS in I2C mode, checks th
 HAB2_UBLOX_EchoGPS_Serial - A test program for the UBLOX GPS in serial mode, checks that Navigation model 6 can be set
 
 I2C_Scanner - a basic I2C scanner, reports any I2C devices found
+
+Various third party Libraries need to be installed;
+
+Flash-5 Library - https://github.com/mikalhart/Flash/releases
+LowPower - https://github.com/rocketscream/Low-Power
+TinyGPS++ - http://arduiniana.org/libraries/tinygpsplus/
+NeoSWSerial  - https://github.com/SlashDevin/NeoSWSerial  
+
+There is an issue with the Flash-5 library, changes to the Arduino IDE since the Library was published in 2014
+cause a compile error; ‘prog_char’ does not name a type. The solution to this is to edit the Flash.h file in
+the Flash-5 Library. Add the following lines in Flash.h, just after the #include <avr/pgmspace.h>, i.e. around line 30
+
+#if ARDUINO >= 150
+typedef char prog_char __attribute__((__progmem__));
+#endif
