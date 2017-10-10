@@ -27,6 +27,6 @@ There is an issue with the Flash-5 library, changes to the Arduino IDE since the
 cause a compile error; ‘prog_char’ does not name a type. The solution to this is to edit the Flash.h file in
 the Flash-5 Library. Add the following lines in Flash.h, just after the #include <avr/pgmspace.h>, i.e. around line 30
 
-#if ARDUINO >= 150
+if ARDUINO >= 150
 typedef char prog_char __attribute__((__progmem__));
-#endif
+endif
