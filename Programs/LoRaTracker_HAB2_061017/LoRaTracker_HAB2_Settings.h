@@ -32,7 +32,6 @@
 #define CPU_TemperatureRead
 
 #define Board_Definition "HAB2_Board_Definitions.h"  //define the board to use here       
-#define Board_Definition  "Locator2_Board_Definitions.h"
 
 const float runmA = 4;                        //processor run current
 const float SleepmA = 0.22;                   //approx current in sleep, Ublox GPS consumes circa 200uA
