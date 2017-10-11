@@ -7,7 +7,7 @@
 //
 //**************************************************************************************************
 
-#define programname "LoRaTracker_HAB2_060817"
+#define programname "LoRaTracker_HAB2_101017"
 #define aurthorname "Stuart Robinson"
 
 #include <Arduino.h>

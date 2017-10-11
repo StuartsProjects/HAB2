@@ -7,7 +7,7 @@
 //
 //**************************************************************************************************
 
-#define programname "LoRaTracker_HAB2_FSKRTTYONLY_010817"
+#define programname "LoRaTracker_HAB2_FSKRTTYONLY_101017"
 #define aurthorname "Stuart Robinson"
 
 #include <Arduino.h>
@@ -40,8 +40,7 @@
   0           1      2   3   4   5    6      7            8         9        10         11        12       13         14        15
 
   To Do:
-  Check GPS Cyclic mode setting.
- 
+  
   Changes:
 
 **************************************************************************************************
