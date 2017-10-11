@@ -46,8 +46,8 @@ const float SleepmA = 0.22;                   //approx current in sleep, Ublox G
 
 
 #define ConfigureDefaults                    //Configure settings from default program constants, save in memory and copy to RAM, need to do this once only
-//#define ClearSavedData                     //zero the saved data, resets, sequence, Mahr
 //#define ClearAllMemory                     //Clears from start memory to end memory, normally 1kbyte, needs to be folloowed by ConfigureDefaults
+//#define ClearSavedData                     //zero the saved data, resets, sequence, Mahr
 //#define ConfigureFromMemory                //Read settings from attached memory
 
 const byte Output_len_max = 125;             //maximum length for built payload
@@ -55,10 +55,7 @@ const byte Output_len_max = 125;             //maximum length for built payload
 
 //#define DEBUG                                //if defined, prints additional debug information to terminal
 
-const byte Cmd_WaitSecs = 5;                 //number of seconds to stay in command mode
-const byte default_attempts = 5;             //default number of times a command will attempt to be sent
 const int DozeSleepSecs = 180;               //how many seconds to spend in doze (very low power mode), mode can only be enabled remotely
-
 
 //**************************************************************************************************
 // 3) Frequency settings
@@ -120,8 +117,11 @@ const float TXmA = 40;                       //LoRa device transmit current @ 10
 
 const int inter_Packet_delay = 500;          //allows time for receiver to be ready to see a possible reply, in mS
 const byte delayforRelaysecs = 2;            //allows time for relay to re-transmit
+
+const byte Cmd_WaitSecs = 5;                 //number of seconds to stay in waiting for command mode
 const byte Command_Loops = 3;                //if one command is received wait for this number of loops to keep control channel open
 
+//Key Definition
 const char key0 = 'L';                       //Used to restrict access to some commands
 const char key1 = 'o';
 const char key2 = 'R';
