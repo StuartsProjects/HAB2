@@ -118,7 +118,7 @@ const byte lora_TXBUFF_Size = 128;
 const float RXmA = 11;                       //LoRa device receive current
 const float TXmA = 40;                       //LoRa device transmit current @ 10dBm
 
-const int inter_Packet_delay = 500;          //allows time for receiver to be ready to see a possible reply
+const int inter_Packet_delay = 500;          //allows time for receiver to be ready to see a possible reply, in mS
 const byte delayforRelaysecs = 2;            //allows time for relay to re-transmit
 const byte Command_Loops = 3;                //if one command is received wait for this number of loops to keep control channel open
 
