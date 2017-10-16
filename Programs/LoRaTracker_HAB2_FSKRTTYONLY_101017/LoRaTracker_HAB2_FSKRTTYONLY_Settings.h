@@ -45,13 +45,12 @@
 
 
 #define ConfigureDefaults                    //Configure settings from default program constants, save in memory and copy to RAM, need to do this once only
-//#define ClearSavedData                     //zero the saved data, resets, sequence, Mahr
 //#define ClearAllMemory                     //Clears from start memory to end memory, normally 1kbyte, needs to be folloowed by ConfigureDefaults
+//#define ClearSavedData                     //zero the saved data, resets, sequence, Mahr
 //#define ConfigureFromMemory                //Read settings from attached memory
 
 const byte Output_len_max = 125;             //maximum length for built payload
 #define CheckTone                            //comment in to have a calibrate tone at startup, also indicates navigation model 6 set
-
 
 //#define DEBUG                              /if defined, prints additional debug information to terminal
 

@@ -17,4 +17,6 @@ to upgrade your Arduino IDE to a modern version.
 
 The user of these programs is expected to have had a reasonable level of experience in using the
 Arduino environment. Using the programs does require the user to make configuration changes so
-they will need to be able to cope with complier errors due to issues that they may create.   
+they will need to be able to cope with complier errors due to issues that they may create. 
+
+  

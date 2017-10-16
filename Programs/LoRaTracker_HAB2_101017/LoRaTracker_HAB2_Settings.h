@@ -132,7 +132,7 @@ const char key3 = 'a';
 //**************************************************************************************************
 
 #define USE_SOFTSERIAL_GPS                       //need to include this if we are using softserial for GPS     
-#define GPS_Library "UBLOX_SerialGPS.h"          //define the GPS library routines to use here
+#define GPS_Library "UBLOX_SerialGPS2.h"          //define the GPS library routines to use here
 //#define GPS_Library "UBLOX_I2CGPS.h"
 
 //#define DEBUGNoGPS                               //test mode, does not use GPS
