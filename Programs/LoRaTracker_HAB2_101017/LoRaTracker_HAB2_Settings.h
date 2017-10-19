@@ -256,7 +256,7 @@ const unsigned long  adc_constant = 1146679;      //if processor self read of it
 // 14) HAB2 settings
 //**************************************************************************************************
 
-char Flight_ID[15] = "LoRaHAB2";
+char Flight_ID[15] = "MyFlight1";
 
 const float west_fence = -4;
 const float east_fence = 45;
@@ -269,5 +269,4 @@ const boolean  promiscuous_Mode = true;                 //if set to True remote 
 #define ControlledNode '1'                              //normally used by tracker transmitter in promiscuous_Mode
 #define ThisNode ControlledNode
 
-const byte PayloadArraySize = 20;                       //Maximum number of fields when parsing long HAB payload
 
