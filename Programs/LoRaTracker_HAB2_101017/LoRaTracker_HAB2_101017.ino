@@ -60,7 +60,7 @@ byte ramc_TrackerMode_Bandwidth;
 byte ramc_TrackerMode_SpreadingFactor;
 byte ramc_TrackerMode_CodeRate;
 byte ramc_TrackerMode_Power;
-byte TRStatus;                                      //used to store current status flag bits
+byte TRStatus = 0;                                  //used to store current status flag bits
 
 byte ramc_SearchMode_Bandwidth;
 byte ramc_SearchMode_SpreadingFactor;

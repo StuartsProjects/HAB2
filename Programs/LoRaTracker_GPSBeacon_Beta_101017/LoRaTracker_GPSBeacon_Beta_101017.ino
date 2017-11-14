@@ -54,7 +54,7 @@ uint8_t ramc_TrackerMode_Bandwidth;
 uint8_t  ramc_TrackerMode_SpreadingFactor;
 uint8_t  ramc_TrackerMode_CodeRate;
 uint8_t  ramc_TrackerMode_Power;
-uint8_t  TRStatus;                                      //used to store current status flag bits
+uint8_t  TRStatus = 0;                              //used to store current status flag bits
 
 uint8_t  ramc_CommandMode_Bandwidth;
 uint8_t  ramc_CommandMode_SpreadingFactor;
