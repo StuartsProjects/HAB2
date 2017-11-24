@@ -37,23 +37,23 @@ To Do:
 #include <Arduino.h>
 #include <avr/pgmspace.h>
 
-//#include "HAB2_Board_Definitions.h"         //select board type here  
-//#include "PIHTracker3_Board_Definitions.h"         //select board type here
-#include "Locator2_Board_Definitions.h"         //select board type here
+//#include "HAB2_Board_Definitions.h"             //select board type here  
+//#include "PIHTracker3_Board_Definitions.h"      //select board type here
+#include "Locator2_Board_Definitions.h"           //select board type here
 
-#include "Program_Definitions.h"            //definitions for programs
-
-const unsigned long GPS_WaitAck_mS = 2000;  //number of mS to wait for an ACK response from GPS
-const byte GPS_attempts = 3;                //number of times the sending of GPS config will be attempted.
-const byte GPS_Reply_Size = 12;             //size of GPS reply buffer
-const unsigned int GPSBaud = 9600;          //baud rate of GPS
+#include "Program_Definitions.h"                  //definitions for programs
+const unsigned int GPS_Clear_DelaymS = 2000;      //mS to wait after a GPS Clear command is sent
+const unsigned long GPS_WaitAck_mS = 2000;        //number of mS to wait for an ACK response from GPS
+const byte GPS_attempts = 3;                      //number of times the sending of GPS config will be attempted.
+const byte GPS_Reply_Size = 12;                   //size of GPS reply buffer
+const unsigned int GPSBaud = 9600;                //baud rate of GPS
 boolean GPS_Config_Error;  
 
-#include <NeoSWSerial.h>                    //https://github.com/SlashDevin/NeoSWSerial  
-NeoSWSerial GPSserial(GPSRX, GPSTX);        //this library is more relaible at GPS init than software serial
+#include <NeoSWSerial.h>                          //https://github.com/SlashDevin/NeoSWSerial  
+NeoSWSerial GPSserial(GPSRX, GPSTX);              //this library is more relaible at GPS init than software serial
 
-#define GPS_ALLOW_GPGSV                     //we want to see the GPGSV messages 
-#include "UBLOX_SerialGPS.h"
+#define GPS_ALLOW_GPGSV                           //we want to see the GPGSV messages 
+#include "UBLOX_SerialGPS2.h"
 
 
 void loop()                    

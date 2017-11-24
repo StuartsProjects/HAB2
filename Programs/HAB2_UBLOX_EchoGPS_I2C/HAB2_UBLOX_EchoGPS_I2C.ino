@@ -39,8 +39,8 @@
 #include <Arduino.h>
 #include <avr/pgmspace.h>
 
-//#include "HAB2_Board_Definitions.h"       //select board type here  
-#include "Locator2_Board_Definitions.h"     //select board type here
+#include "HAB2_Board_Definitions.h"       //select board type here  
+//#include "Locator2_Board_Definitions.h"     //select board type here
 
 #include "Program_Definitions.h"            //definitions for programs
 

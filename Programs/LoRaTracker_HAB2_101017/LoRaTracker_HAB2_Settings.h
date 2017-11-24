@@ -135,8 +135,8 @@ const char key3 = 'a';
 #define GPS_Library "UBLOX_SerialGPS.h"          //define the GPS library routines to use here
 //#define GPS_Library "UBLOX_I2CGPS.h"
 
-#define DEBUGNoGPS                               //test mode, does not use GPS
-//#define Use_Test_Location                        //to use test location for transmissions include this define
+//#define DEBUGNoGPS                             //test mode, does not use GPS
+//#define Use_Test_Location                      //to use test location for transmissions include this define
 
 //#define GPS_ALLOW_GPGSV                        //define this so that GPGSV senetences are not turned off 
 

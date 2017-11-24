@@ -53,7 +53,7 @@ int ramc_CalibrationOffset;
 
 unsigned long ramc_TrackerMode_Frequency;           //frequencies, and other parameters, are copied from memory into RAM.
 byte ramc_TrackerMode_Power;
-byte TRStatus  0;                                   //used to store current status flag bits
+byte TRStatus = 0;                                   //used to store current status flag bits
 
 
 byte ramc_Current_TXconfig1;                        //sets the config of whats transmitted etc
@@ -825,7 +825,7 @@ void setup()
   digitalWrite(lora_NSS, HIGH);
 
   SPI.begin();                            //initialize SPI
-  SPI.beginTransaction(SPISettings(10000000, MSBFIRST, SPI_MODE0));
+  SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
 
 
 #ifdef ClearSavedData

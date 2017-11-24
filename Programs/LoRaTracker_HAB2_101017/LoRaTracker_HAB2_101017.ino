@@ -1529,7 +1529,7 @@ void setup()
   digitalWrite(lora_NSS, HIGH);
 
   SPI.begin();                            //initialize SPI
-  SPI.beginTransaction(SPISettings(10000000, MSBFIRST, SPI_MODE0));
+  SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
 
 
 #ifdef ClearSavedData

@@ -21,10 +21,10 @@ free from errors.
 
 This program scans each address on the I2C bus and reports if a device was found, examples.
 
-BME280 Sensor 0x76
 UBLOX GPS 0x42
+TC74 Temperature Sensor 0x4c
 MB85RC16PNF FRAM 0x50,0x51,0x52,0x53,0x54,0x55,0x56,0x57
-
+BME280 Sensor 0x76
 
 ********************************************************************************************************************************
 */
@@ -34,6 +34,7 @@ MB85RC16PNF FRAM 0x50,0x51,0x52,0x53,0x54,0x55,0x56,0x57
 #include <Wire.h>
 #include "I2C_Scanner.h"
 #include "HAB2_Board_Definitions.h"
+//#include "Locator2_Board_Definitions.h"
 
 unsigned int scancount;
 
@@ -56,6 +57,9 @@ void setup()
   Serial.println(F(dateproduced));
   Serial.println(F(aurthorname));
   Serial.println();
+  Serial.flush();
+  pinMode(GPSPOWER, OUTPUT);                             //in case Ublox GPS breakout is fitted
+  digitalWrite(GPSPOWER, LOW);
   Wire.begin();
  }
 

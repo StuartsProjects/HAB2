@@ -35,7 +35,7 @@
       byte error, address;
       int nDevices;
      
-      Serial.println("Scanning...");
+      Serial.println("Scanning for I2C Devices...");
      
       nDevices = 0;
       for(address = 1; address < 127; address++ )
