@@ -28,11 +28,12 @@
 // 1) Hardware related definitions and options - specify board type here
 //**************************************************************************************************
 
-//#define External_VoltageRead
 #define CPU_VoltageRead
+//#define External_VoltageRead
 
-//#define External_TemperatureRead
 #define CPU_TemperatureRead
+//#define External_TemperatureRead
+const int Temperature_Adjust = 0;                     //to allow calibration of external temperature sensor
 
 #define Board_Definition "HAB2_Board_Definitions.h"  //define the board to use here       
 
