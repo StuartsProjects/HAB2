@@ -31,9 +31,11 @@
 #define CPU_VoltageRead
 //#define External_VoltageRead
 
-#define CPU_TemperatureRead
-//#define External_TemperatureRead
-const int Temperature_Adjust = 0;                     //to allow calibration of external temperature sensor
+//#define CPU_TemperatureRead
+#define External_TemperatureRead                    //assumes a TC74 is in use
+
+const int Temperature_Adjust = 0;                   //to allow calibration of external temperature sensor
+#define TC74_Address 0x4c                           //init with TC74 address, can be 0x48 to 0x4F depending on specific type
 
 #define Board_Definition "HAB2_Board_Definitions.h"  //define the board to use here       
 

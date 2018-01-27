@@ -27,10 +27,10 @@ This program reads the temperature from a TC74 sensor.
 #include <TC74_I2C.h>                          //https://github.com/Mario-H/TC74_I2C/blob/master/LICENSE.md
 
 #include "HAB2_Board_Definitions.h"
-//#include "Locator2_Board_Definitions.h"
 
 
-TC74_I2C TC74(0x4c);  			                   //init with TC74 address
+
+TC74_I2C TC74(0x4c);  			                  //init with TC74 address, can be 0x48 to 0x4F depending on specific type
 
 int temperature = 0;
 

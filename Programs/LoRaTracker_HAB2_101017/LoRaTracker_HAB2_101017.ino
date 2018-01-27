@@ -576,8 +576,9 @@ void checkForPacket()
 void processPacket()
 {
   //we have a packet so lets decide what to do with it
-  byte i, j, ptr;
-
+  byte j, ptr;
+  unsigned int i;
+  
   if (lora_RXPacketType == Test)
   {
     if (lora_RXBUFF[0] == '0')
@@ -693,7 +694,7 @@ void processPacket()
       ptr = 4;                                                  //bind packet has 4 bytes of key
       Serial.println(F("Bind RX"));
 
-      for (i = addr_StartConfigData; i <= addr_EndConfigData; i++)
+      for (i = addr_StartBindData; i <= addr_EndBindData; i++)
       {
         j = lora_RXBUFF[ptr++];
         Memory_WriteByte(i, j);
