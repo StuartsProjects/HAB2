@@ -1438,10 +1438,17 @@ void led_Flash(unsigned int flashes, unsigned int delaymS)
 // Memory Routines
 //*******************************************************************************************************
 
+void do_ClearSavedData()
+{
+  //clears the whole of memory, normally 1kbyte
+  Serial.println(F("Clear Saved Memory"));
+  Memory_Set(addr_StartMemory, addr_EndMemory, 0);
+}
+
 void Clear_All_Memory()
 {
   //clears the whole of memory, normally 1kbyte
-  Serial.print(F("Clear All Memory"));
+  Serial.println(F("Clear All Memory"));
   Memory_Set(addr_StartMemory, addr_EndMemory, 0);
 }
 
@@ -1506,6 +1513,8 @@ void setup()
   led_Flash(2, 500);
 
   Serial.begin(38400);                    //Setup Serial console ouput
+
+  Memory_Start();
 
 #ifdef ClearAllMemory
   Clear_All_Memory();
