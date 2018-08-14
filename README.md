@@ -4,7 +4,7 @@ https://github.com/LoRaTracker/LoRaTracker-Library
 
 The HAB2 tracker board is a minimal component count high altitude balloon tracker. 
 
-The components required to build the tracker are described in the 'HAB2 Tracker Build.doc' file 
+The components required to build the tracker are described in the 'HAB2 Minimum Parts Tracker Build.pdf' file 
 that will be found in the \Build folder. 
 
 The programs have been tested against version 1.8.5 of the Arduino IDE. Note that this 

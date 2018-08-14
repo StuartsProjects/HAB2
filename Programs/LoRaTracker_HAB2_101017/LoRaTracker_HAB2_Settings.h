@@ -157,7 +157,7 @@ const unsigned int GPSFixs = 100;                //number of GPS fixes between s
 const byte GPS_attempts = 3;                     //number of times the sending of GPS config will be attempted.
 const byte GPS_Reply_Size = 12;                  //size of GPS reply buffer
 const float GPSmA = 24;                          //GPS average (UBLOX) current when aquiring fix
-
+const unsigned int GPS_Clear_DelaymS = 2000;     //mS to wait after a GPS Clear command is sent  
 
 //Centre of Cardiff Castle keep
 #define TestLatitude 51.48230
