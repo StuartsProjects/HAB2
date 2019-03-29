@@ -4,7 +4,7 @@
 
   LoRaTracker Programs for Arduino
 
-  Copyright of the author Stuart Robinson - 10/10/2017
+  Copyright of the author Stuart Robinson - 20/05/2018
 
   http://www.LoRaTracker.uk
 
@@ -19,7 +19,7 @@
   To Do:
 
   Changes:
-  101017 Removed unused board definitions
+
 
 ******************************************************************************************************
 */
@@ -28,37 +28,29 @@
 // 1) Hardware related definitions and options - specify board type here
 //**************************************************************************************************
 
-#define CPU_VoltageRead
-//#define External_VoltageRead
+#define External_VoltageRead
 
-#define CPU_TemperatureRead
-//#define External_TemperatureRead                    //assumes a TC74 is in use
+#define External_TemperatureRead                     //assumes a TC74 is in use
 
-const int Temperature_Adjust = 0;                   //to allow calibration of external temperature sensor
-#define TC74_Address 0x4c                           //init with TC74 address, can be 0x48 to 0x4F depending on specific type
+#define TC74_Address 0x4c                            //init with TC74 address, can be 0x48 to 0x4F depending on specific type
+
+const int Temperature_Adjust = 0;                    //to allow adjustment of external temperature sensor
 
 #define Board_Definition "HAB2_Board_Definitions.h"  //define the board to use here       
-
-const float runmA = 4;                        //processor run current
-const float SleepmA = 0.22;                   //approx current in sleep, Ublox GPS consumes circa 200uA
-
 
 //**************************************************************************************************
 // 2) Program Options
 //**************************************************************************************************
 
 
-#define ConfigureDefaults                    //Configure settings from default program constants, save in memory and copy to RAM, need to do this once only
-#define ClearAllMemory                     //Clears from start memory to end memory, normally 1kbyte, needs to be folloowed by ConfigureDefaults
-//#define ClearSavedData                     //zero the saved data, resets, sequence, Mahr
-//#define ConfigureFromMemory                //Read settings from attached memory
+#define ConfigureDefaults                            //Configure settings from default program constants, save in memory and copy to RAM, need to do this once only
+//#define ClearAllMemory                             //Clears from start memory to end memory, normally 1kbyte, needs to be followed by ConfigureDefaults
 
-const byte Output_len_max = 125;             //maximum length for built payload
-#define CheckTone                            //comment in to have a calibrate tone at startup, also indicates navigation model 6 set
+const byte Output_len_max = 125;                     //maximum length for built payload
+#define CheckTone                                    //comment in to have a calibrate tone at startup, also indicates navigation model 6 set
 
-//#define DEBUG                                //if defined, prints additional debug information to terminal
+//#define DEBUG                                      //if defined, prints additional debug information to terminal
 
-const int DozeSleepSecs = 180;               //how many seconds to spend in doze (very low power mode), mode can only be enabled remotely
 
 //**************************************************************************************************
 // 3) Frequency settings
@@ -69,12 +61,6 @@ const unsigned long TrackerMode_Frequency = 434400000;
 
 //Search mode
 const unsigned long SearchMode_Frequency = 434300000;
-
-//Command mode
-const unsigned long CommandMode_Frequency = 434500000;
-
-//Bind mode - Change this with great care !!!!!
-const unsigned long BindMode_Frequency = 434100000;
 
 //this is the LoRa module frequency calibration offset in Hertz
 const int CalibrationOffset = 0;
@@ -96,56 +82,33 @@ const int CalibrationOffset = 0;
 #define SearchMode_CodeRate CR45
 #define SearchMode_Power 10
 
-//Command mode
-#define CommandMode_Bandwidth BW62500
-#define CommandMode_SpreadingFactor SF10
-#define CommandMode_CodeRate CR45
-#define CommandMode_Power 10
-
-//Bind mode
-#define BindMode_Bandwidth BW500000
-#define BindMode_SpreadingFactor SF8
-#define BindMode_CodeRate CR45
-#define BindMode_Power 2
-
-#define SendBind                             //at startup tracker transmitter will send a bind packet
 //#define LORADEBUG                          //displays extra debug messages when using LoRa
 
 const byte Deviation = 0x52;                 //typical deviation for tones
-const byte lora_RXBUFF_Size = 128;
+const byte lora_RXBUFF_Size = 16;            //RX mode is not used
 const byte lora_TXBUFF_Size = 128;
 
-const float RXmA = 11;                       //LoRa device receive current
-const float TXmA = 40;                       //LoRa device transmit current @ 10dBm
-
-const int inter_Packet_delay = 500;          //allows time for receiver to be ready to see a possible reply, in mS
 const byte delayforRelaysecs = 2;            //allows time for relay to re-transmit
 
-const byte Cmd_WaitSecs = 5;                 //number of seconds to stay in waiting for command mode
-const byte Command_Loops = 3;                //if one command is received wait for this number of loops to keep control channel open
 
-//Key Definition
-const char key0 = 'L';                       //Used to restrict access to some commands
-const char key1 = 'o';
-const char key2 = 'R';
-const char key3 = 'a';
 
 //**************************************************************************************************
 // 5) GPS Options
 //**************************************************************************************************
 
-#define USE_SOFTSERIAL_GPS                       //need to include this if we are using softserial for GPS     
-#define GPS_Library "UBLOX_SerialGPS.h"          //define the GPS library routines to use here
-//#define GPS_Library "UBLOX_I2CGPS.h"
+//#define USE_SOFTSERIAL_GPS                     //need to include this if we are using softserial for GPS     
+//#define GPS_Library "UBLOX_SerialGPS.h"        //define the GPS library routines to use here
+#define GPS_Library "UBLOX_I2CGPS2.h"
 
 //#define DEBUGNoGPS                             //test mode, does not use GPS
 //#define Use_Test_Location                      //to use test location for transmissions include this define
 
 //#define GPS_ALLOW_GPGSV                        //define this so that GPGSV senetences are not turned off 
+//#define Checkfor_GNNS_Mode                     //define this if you want to check for GNNS sentences from GPS, not needed for latest TinyGPS++
 
 #define GPSBaud 9600                             //GPS Baud rate   
 #define WhenNoGPSFix LeaveOn                     //What to do with GPS power when there is no fix at ends of wait period (LeaveOn or LeaveOff)
-#define WaitGPSFixSeconds 30                     //in flight mode time to wait for a new GPS fix 
+const byte WaitGPSFixSeconds = 30;               //in flight mode time to wait for a new GPS fix 
 //#define Remove_GPS_Power                       //Some tracker boards can remove the power from the GPS, if so define this to use it
 #define Use_GPS_SoftwareBackup                   //some GPSs do not support this mode, Ubloxes do, used for GPS Hotfix option
 //#define Check_GPS_Navigation_Model_OK          //every time the GPS is checked for a fix we can ceck for correct navigation mode on UBLOX
@@ -156,7 +119,6 @@ const unsigned long GPS_WaitAck_mS = 2000;       //number of mS to wait for an A
 const unsigned int GPSFixs = 100;                //number of GPS fixes between setting system clock from GPS
 const byte GPS_attempts = 3;                     //number of times the sending of GPS config will be attempted.
 const byte GPS_Reply_Size = 12;                  //size of GPS reply buffer
-const float GPSmA = 24;                          //GPS average (UBLOX) current when aquiring fix
 const unsigned int GPS_Clear_DelaymS = 2000;     //mS to wait after a GPS Clear command is sent  
 
 //Centre of Cardiff Castle keep
@@ -181,7 +143,6 @@ const unsigned int GPS_Clear_DelaymS = 2000;     //mS to wait after a GPS Clear 
 //**************************************************************************************************
 
 #define Memory_Library "EEPROM_Memory.h"              //define this file if the internal EEPROM is in use
-//#define Memory_Library "I2CFRAM_MB85RC16PNF.h"          //define this file if the I2C FRAM is in use
 
 //**************************************************************************************************
 // 8) FSK RTTY Settings
@@ -261,13 +222,8 @@ const unsigned long  adc_constant = 1146679;      //if processor self read of it
 
 char Flight_ID[15] = "MyFlight1";
 
-const float west_fence = -4;
-const float east_fence = 45;
+const unsigned int Loop_Sleepsecs = 25;           //sleep time in seconds after each TX loop
 
-const unsigned int Loop_Sleepsecs = 25;                 //sleep time in seconds after each TX loop
-const unsigned int outside_fence_Sleep_seconds = 600;   //approx 10 minutes
-const boolean  promiscuous_Mode = true;                 //if set to True remote control packets from any node accepted
+const char ThisNode = '1';
 
-#define RemoteControlNode 'G'                           //normally used by tracker transmitter in promiscuous_Mode
-#define ControlledNode '1'                              //normally used by tracker transmitter in promiscuous_Mode
-#define ThisNode ControlledNode
+

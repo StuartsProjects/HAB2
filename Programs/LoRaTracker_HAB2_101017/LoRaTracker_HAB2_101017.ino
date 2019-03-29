@@ -310,7 +310,7 @@ byte buildHABPacket()                         //expects a char buffer, so this r
 
   if (!readConfigByte(GPSHotFix))
   {
-    GPSFixTime = 0;                                              //if GPS power save is off (no GPSHotFix), ensure GPS fix time is set to zero
+    GPSFixTime = 0;                                            //if GPS power save is off (no GPSHotFix), ensure GPS fix time is set to zero
     Serial.println("GPSFixTime set to 0");
   }
 
@@ -1696,9 +1696,3 @@ void setup()
 
   setConfigByte(DozeEnable, Disabled);                     //ensure Doze mode disabled at reset
 }
-
-
-
-
-
-
