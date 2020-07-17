@@ -1,6 +1,6 @@
-The Programs for the HAB2 tracker need the LoRaTracker Library installed see here;
+The Programs for the HAB2 tracker need the Tracker Library installed see here;
 
-https://github.com/LoRaTracker/LoRaTracker-Library
+https://github.com/StuartsProjects/Tracker-Library
 
 The HAB2 tracker board is a minimal component count high altitude balloon tracker. 
 
@@ -25,6 +25,6 @@ Arduino environment. Using the programs does require the user to make configurat
 they will need to be able to cope with complier errors due to issues that they may create. 
 
 Stuart Robinson
-www.LoRaTracker.uk
+
 
   

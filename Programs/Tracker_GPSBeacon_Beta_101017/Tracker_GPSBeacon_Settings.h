@@ -1,12 +1,12 @@
-//LoRaTracker_GPSBeacon_Settings.h
+//Tracker_GPSBeacon_Settings.h
 /*
 ******************************************************************************************************
 
-  LoRaTracker Programs for Arduino
+  Tracker Programs for Arduino
 
   Copyright of the author Stuart Robinson - 16/10/2017
 
-  http://www.LoRaTracker.uk
+  
 
   These programs may be used free of charge for personal, recreational and educational purposes only.
 

@@ -6,11 +6,9 @@
 
 /*
 *******************************************************************************************************************************
-  Easy Build LoRaTracker Programs for Arduino
+  Easy Build Tracker Programs for Arduino
 
   Copyright of the author Stuart Robinson - 1/10/17
-
-  http://www.LoRaTracker.uk
 
   These programs may be used free of charge for personal, recreational and educational purposes only.
 

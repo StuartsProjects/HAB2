@@ -3,16 +3,14 @@
 #define dateproduced "26/11/2017"
 #define aurthorname "Stuart Robinson"
 #include <Arduino.h>
-#include "Program_Definitions.h"                     //part of LoRaTracker library
+#include "Program_Definitions.h"                     //part of Tracker library
 #define LoRa_Device_in_MB1                           //required if board is using Mikrobus sockets
 
 /*
 *****************************************************************************************************************************
-LoRaTracker Test Programs
+Tracker Test Programs
 
 Copyright of the author Stuart Robinson - 26/11/2017
-
-http://www.LoRaTracker.uk
 
 These programs may be used free of charge for personal, recreational and educational purposes only.
 
@@ -61,10 +59,10 @@ You can explicitly define the required pins below by removing the two // charact
 
 /*
 ***********************************************************************************************************************************************
-As an alternative to explicitly defining the Arduino pins required, there are pre-defined board definition files for the LoRaTracker boards
-included in the LoRaTracker Library;
+As an alternative to explicitly defining the Arduino pins required, there are pre-defined board definition files for the Tracker boards
+included in the Tracker Library;
 
-https://github.com/LoRaTracker/LoRaTracker-Library
+https://github.com/StuartsProjects/Tracker-Library
 
 Select (include) the board definition file you require by removing the // characters before the appropriate include line in the list below
 ***********************************************************************************************************************************************
@@ -93,7 +91,7 @@ const byte lora_RXBUFF_Size = 32;                   //needed for LoRa3 library
 const byte lora_TXBUFF_Size = 64;                   //needed for LoRa3 library        
 byte keypress;                                      //needed for LoRa3 library  
 
-#include "LoRa4.h"                                  //part of LoRaTracker library
+#include "LoRa4.h"                                  //part of Tracker library
 
 #define Serial_Monitor_Baud 38400                   //this is baud rate used for the Arduino IDE Serial Monitor
 

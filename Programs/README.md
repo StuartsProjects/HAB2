@@ -1,12 +1,12 @@
-This folder contains the current version of the LoRaTracker HAB2 programs.
+﻿This folder contains the current version of the Tracker HAB2 programs.
 
-The programs requre the installation of the current LoRaTracker Library files see here;
+The programs requre the installation of the current Tracker Library files see here;
 
-https://github.com/LoRaTracker/LoRaTracker-Library
+https://github.com/StuartsProjects/Tracker-Library
 
 The programs in here are;
 
-LoRaTracker_HAB2_xxxxxx - The HAB tracker transmitter, supports two way LoRa control and tracking
+Tracker_HAB2_xxxxxx - The HAB tracker transmitter, supports two way LoRa control and tracking
 
 FSKRTTY_HAB2_FSKRTTYONLY_xxxxxx - A FSK RTTY only version of the HAB tracker
 

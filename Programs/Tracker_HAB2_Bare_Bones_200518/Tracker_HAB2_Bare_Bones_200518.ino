@@ -7,24 +7,24 @@
 //
 //**************************************************************************************************
 
-#define programname "LoRaTracker_HAB2_Bare_Bones_200518"
+#define programname "Tracker_HAB2_Bare_Bones_200518"
 #define aurthorname "Stuart Robinson"
 
 #include <Arduino.h>
 #include <avr/pgmspace.h>
 
-#include "LoRaTracker_HAB2_Settings.h"
+#include "Tracker_HAB2_Settings.h"
 #include Board_Definition
 #include "Program_Definitions.h"
 
 /*
 **************************************************************************************************
 
-  LoRaTracker Programs for Arduino
+  Tracker Programs for Arduino
 
   Copyright of the author Stuart Robinson
 
-  http://www.LoRaTracker.uk
+  
 
   These programs may be used free of charge for personal, recreational and educational purposes only.
 
@@ -134,7 +134,7 @@ void do_Transmissions()
   pulseWDI();
   lora_Setup();                                                      //resets then sets up LoRa device
 
-  Setup_LoRaTrackerMode();
+  Setup_TrackerMode();
 
   incMemoryULong(addr_SequenceNum);                                  //increment sequence number
   Count = buildHABPacket();
@@ -492,7 +492,7 @@ void printNodes()
 }
 
 
-void Setup_LoRaTrackerMode()
+void Setup_TrackerMode()
 {
   lora_SetFreq(TrackerMode_Frequency, CalibrationOffset);
   lora_SetModem2(TrackerMode_Bandwidth, TrackerMode_SpreadingFactor, TrackerMode_CodeRate, Explicit);  //Setup the LoRa modem parameters for tracker mode
@@ -642,11 +642,11 @@ void setup()
 
   j = read_SupplyVoltage();                             //get supply mV
 
-  Setup_LoRaTrackerMode();
+  Setup_TrackerMode();
   send_Command(PowerUp);                                //send power up command, includes supply mV and config, on tracker settings
   sleepSecs(1);
 
-  Setup_LoRaTrackerMode();                              //so that check tone is at correct frequency
+  Setup_TrackerMode();                              //so that check tone is at correct frequency
 
   GPS_Config_Error = false;                             //make sure GPS error flag is cleared
 
