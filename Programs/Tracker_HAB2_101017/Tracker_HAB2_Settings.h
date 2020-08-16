@@ -6,8 +6,6 @@
 
   Copyright of the author Stuart Robinson - 10/10/2017
 
-  
-
   These programs may be used free of charge for personal, recreational and educational purposes only.
 
   This program, or parts of it, may not be used for or in connection with any commercial purpose without
@@ -32,15 +30,15 @@
 //#define External_VoltageRead
 
 #define CPU_TemperatureRead
-//#define External_TemperatureRead                    //assumes a TC74 is in use
+//#define External_TemperatureRead                  //assumes a TC74 is in use
 
 const int Temperature_Adjust = 0;                   //to allow calibration of external temperature sensor
 #define TC74_Address 0x4c                           //init with TC74 address, can be 0x48 to 0x4F depending on specific type
 
-#define Board_Definition "HAB2_Board_Definitions.h"  //define the board to use here       
+#define Board_Definition "HAB2_Board_Definitions.h" //define the board to use here       
 
-const float runmA = 4;                        //processor run current
-const float SleepmA = 0.22;                   //approx current in sleep, Ublox GPS consumes circa 200uA
+const float runmA = 4;                              //processor run current
+const float SleepmA = 0.22;                         //approx current in sleep, Ublox GPS consumes circa 200uA
 
 
 //**************************************************************************************************
@@ -48,17 +46,17 @@ const float SleepmA = 0.22;                   //approx current in sleep, Ublox G
 //**************************************************************************************************
 
 
-#define ConfigureDefaults                    //Configure settings from default program constants, save in memory and copy to RAM, need to do this once only
-#define ClearAllMemory                     //Clears from start memory to end memory, normally 1kbyte, needs to be folloowed by ConfigureDefaults
-//#define ClearSavedData                     //zero the saved data, resets, sequence, Mahr
-//#define ConfigureFromMemory                //Read settings from attached memory
+#define ConfigureDefaults                      //Configure settings from default program constants, save in memory and copy to RAM, need to do this once only
+#define ClearAllMemory                         //Clears from start memory to end memory, normally 1kbyte, needs to be folloowed by ConfigureDefaults
+//#define ClearSavedData                       //zero the saved data, resets, sequence, Mahr
+//#define ConfigureFromMemory                  //Read settings from attached memory
 
-const byte Output_len_max = 125;             //maximum length for built payload
-#define CheckTone                            //comment in to have a calibrate tone at startup, also indicates navigation model 6 set
+const byte Output_len_max = 125;               //maximum length for built payload
+#define CheckTone                              //comment in to have a calibrate tone at startup, also indicates navigation model 6 set
 
 //#define DEBUG                                //if defined, prints additional debug information to terminal
 
-const int DozeSleepSecs = 180;               //how many seconds to spend in doze (very low power mode), mode can only be enabled remotely
+const int DozeSleepSecs = 180;                 //how many seconds to spend in doze (very low power mode), mode can only be enabled remotely
 
 //**************************************************************************************************
 // 3) Frequency settings

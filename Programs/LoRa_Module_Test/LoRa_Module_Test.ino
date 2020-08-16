@@ -4,7 +4,7 @@
 #define aurthorname "Stuart Robinson"
 #include <Arduino.h>
 #include "Program_Definitions.h"                     //part of Tracker library
-#define LoRa_Device_in_MB1                           //required if board is using Mikrobus sockets
+#define LoRa_Device_in_MB1                           //required if board is plug in modules
 
 /*
 *****************************************************************************************************************************
@@ -69,17 +69,6 @@ Select (include) the board definition file you require by removing the // charac
 */
 
 #include "HAB2_Board_Definitions.h"
-//#include "Locator2_Board_Definitions.h"
-//#include "LCD_Receiver_Board_Definitions.h"
-//#include "Relay1_Board_Definitions.h"
-//#include "Receiver2_Board_Definitions.h"
-//#include "Sensor1_Board_Definitions.h"
-//#include "MicroRX_Board_Definitions.h"
-//#include "PIHTracker2_Board_Definitions.h"
-//#include "PIHTracker3_Board_Definitions.h"
-//#include "RFM98_Shield_January2016_Board_Definitions.h"
-//#include "MarkTwo_Board_Definitions.h"
-//#include "MicroBit_Board_Definitions.h"
 
 #include <SPI.h>
 

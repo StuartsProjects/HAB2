@@ -35,9 +35,8 @@ To Do:
 #include <Arduino.h>
 #include <avr/pgmspace.h>
 
-//#include "HAB2_Board_Definitions.h"             //select board type here  
-//#include "PIHTracker3_Board_Definitions.h"      //select board type here
-#include "Locator2_Board_Definitions.h"           //select board type here
+#include "HAB2_Board_Definitions.h"             //select board type here  
+
 
 #include "Program_Definitions.h"                  //definitions for programs
 const unsigned int GPS_Clear_DelaymS = 2000;      //mS to wait after a GPS Clear command is sent

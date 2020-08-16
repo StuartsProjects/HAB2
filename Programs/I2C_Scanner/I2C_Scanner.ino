@@ -32,7 +32,6 @@ BME280 Sensor 0x76
 #include <Wire.h>
 #include "I2C_Scanner.h"
 #include "HAB2_Board_Definitions.h"
-//#include "Locator2_Board_Definitions.h"
 
 unsigned int scancount;
 
